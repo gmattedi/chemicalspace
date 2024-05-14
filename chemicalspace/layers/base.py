@@ -479,6 +479,6 @@ class ChemicalSpaceBaseLayer(ABC):
         return hash(tuple(parallel_map(hash_mol, self.mols, n_jobs=self.n_jobs)))
 
     def __repr__(self) -> str:
-        idx_repr = len(self.indices) if self.indices is not None else None
-        scores_repr = len(self.scores) if self.scores is not None else None
+        idx_repr = len(self.indices) if self.indices is not None else "No"
+        scores_repr = len(self.scores) if self.scores is not None else "No"
         return f"<{self.name}: {len(self)} molecules | {idx_repr} indices | {scores_repr} scores>"
