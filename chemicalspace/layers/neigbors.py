@@ -40,8 +40,6 @@ def _find_overlap(
 
 
 class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
 
     def find_overlap(
         self, other: T, radius: float = 0.4, min_neighbors: int = 1  # type: ignore

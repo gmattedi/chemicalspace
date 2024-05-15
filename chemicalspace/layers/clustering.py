@@ -1,9 +1,10 @@
+import warnings
 from functools import partial
 from typing import Any, Generator, List, Literal, Optional, Tuple, TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
-import warnings
+
 from .base import ChemicalSpaceBaseLayer
 from .utils import SEED, reduce_sum
 
@@ -39,6 +40,7 @@ def get_optimal_cluster_number(
         max_clusters = len(features) // 2
 
     scan_n = np.linspace(min_clusters, max_clusters, n_runs, dtype=int)
+    scan_n = np.unique(scan_n)
 
     scores: List[float] = []
     for n_clusters in scan_n:
@@ -50,11 +52,12 @@ def get_optimal_cluster_number(
             score = silhouette_score(features, labels, metric=metric)
         scores.append(float(score))
 
-    n = int(np.argmax(scores)) + min_clusters
+    n = scan_n[np.argmax(scores)]
 
     return n
 
 
+# @dataclass(frozen=False, repr=False)
 class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
     """
     A class representing a layer for clustering chemical space data.
@@ -68,9 +71,6 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
     Attributes:
         Inherits attributes from ChemicalSpaceBaseLayer.
     """
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
 
     def cluster(
         self,
