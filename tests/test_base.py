@@ -3,6 +3,7 @@ from pathlib import Path
 from types import GeneratorType
 from typing import Generator
 
+import numpy as np
 import pytest
 from rdkit.Chem import Mol
 
@@ -60,7 +61,19 @@ def test_save(space: ChemicalSpaceBaseLayer, tmp_path: Path) -> None:
     assert space == space_loaded
 
 
+def test_features(space: ChemicalSpaceBaseLayer) -> None:
+    assert space._features is None
+    assert isinstance(space.features, np.ndarray)
+    assert space.features.shape == (10, 1024)
+
+    # Check that the features are cached
+    assert space._features is not None
+
+
 def test_slicing(space: ChemicalSpaceBaseLayer) -> None:
+    # Compute the features
+    _ = space.features
+
     entry = space[0]
     assert isinstance(entry, tuple)
     assert isinstance(entry[0], Mol)
@@ -80,12 +93,15 @@ def test_slicing(space: ChemicalSpaceBaseLayer) -> None:
 
     assert isinstance(space_slice, ChemicalSpaceBaseLayer)
     assert len(space_slice) == 5
+    # Check features, but bypass `.features` to check if the array has been assigned when instantiating
+    assert np.allclose(space_slice._features, space._features[::2])  # type: ignore
 
     mask = [True, False] * 5
     space_mask: ChemicalSpaceBaseLayer = space.mask(mask=mask)
 
     assert isinstance(space_mask, ChemicalSpaceBaseLayer)
     assert len(space_mask) == 5
+    assert np.allclose(space_mask._features, space._features[::2])  # type: ignore
 
     assert space_slice == space_mask
 
@@ -99,6 +115,8 @@ def test_slicing(space: ChemicalSpaceBaseLayer) -> None:
     assert len(space_chunks_lst) == 4
     assert space_chunks_lst_sizes == [3, 3, 3, 1]
     assert space_chunks_lst[0] == space.slice(start=0, stop=3)
+    assert np.allclose(space_chunks_lst[0]._features, space._features[:3])  # type: ignore
+    assert np.allclose(space_chunks_lst[-1]._features, space._features[-1:])  # type: ignore
 
 
 def test_copy(space: ChemicalSpaceBaseLayer) -> None:
@@ -122,6 +140,10 @@ def test_deduplicate(space: ChemicalSpaceBaseLayer) -> None:
 def test_dual_operations(
     space: ChemicalSpaceBaseLayer, other_space: ChemicalSpaceBaseLayer
 ) -> None:
+
+    # Compute the features
+    _ = space.features, other_space.features
+
     assert space != other_space
     assert space == space
     assert other_space == other_space
@@ -134,15 +156,22 @@ def test_dual_operations(
     space_add: ChemicalSpaceBaseLayer = space.copy()
     space_add.add(mol=other_space.mols[0], idx=idx)
     assert len(space_add) == len(space) + 1
+    assert np.allclose(space_add._features, np.vstack([space._features, other_space._features[0]]))  # type: ignore
 
     combined_spaces = space + other_space
 
     assert len(combined_spaces) == 10 + 15
     assert combined_spaces.slice(0, 10) == space
     assert combined_spaces.slice(10, None) == other_space
+    assert combined_spaces._features is not None
+    assert np.allclose(combined_spaces._features, np.vstack([space._features, other_space._features]))  # type: ignore
 
     subtracted_spaces = other_space - space
     assert len(subtracted_spaces) == 10
+    assert subtracted_spaces._features is not None
+    assert np.allclose(subtracted_spaces._features, other_space._features[:-5])  # type: ignore
 
     empty_space = space - space
     assert len(empty_space) == 0
+    assert empty_space._features is not None
+    assert empty_space._features.size == 0
