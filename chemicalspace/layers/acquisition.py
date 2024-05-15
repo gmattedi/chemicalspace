@@ -4,6 +4,8 @@ from typing import Any, List, Literal, Optional, Sequence, TypeAlias
 import numpy as np
 from numpy.typing import NDArray
 
+from chemicalspace.layers.base import ChemicalSpaceBaseLayer, T
+
 
 class BaseAcquisitionStrategy(ABC):
     def __init__(
@@ -58,3 +60,14 @@ def pick_samples(
     strategy_instance = strategy_class(inputs, scores)
 
     return np.array(strategy_instance(n), dtype=int)
+
+
+class ChemicalSpaceAcquisitionLayer(ChemicalSpaceBaseLayer):
+    def pick(self, n: int, strategy: STRATEGIES = "random") -> T:  # type: ignore
+        pick_idx = pick_samples(
+            n=n, strategy=strategy, inputs=self.features, scores=self.scores
+        )
+        mask = np.zeros(len(self.features), dtype=bool)
+        mask[pick_idx] = True
+
+        return self.mask(mask)

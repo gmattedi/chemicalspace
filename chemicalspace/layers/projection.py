@@ -62,3 +62,15 @@ def project_space(
     proj = np.array(projector.fit_transform(chemical_space.features))
 
     return proj
+
+
+class ChemicalSpaceProjectionLayer(ChemicalSpaceBaseLayer):
+    def project(
+        self,
+        n_components: int = 2,
+        method: PROJECTION_METHODS = "tsne",
+        seed: int = 42,
+        n_jobs: int = -1,
+        **kwargs,
+    ) -> NDArray[np.float_]:
+        return project_space(self, n_components, method, seed, n_jobs, **kwargs)
