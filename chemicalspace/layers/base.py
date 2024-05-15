@@ -19,8 +19,8 @@ from .utils import (
     factory,
     hash_mol,
     parallel_map,
-    smiles2mol,
     safe_smiles2mol,
+    smiles2mol,
 )
 
 T = TypeVar("T", bound="ChemicalSpaceBaseLayer")
@@ -32,6 +32,7 @@ class ChemicalSpaceBaseLayer(ABC):
         mols: Tuple[MolOrSmiles, ...],
         indices: Optional[Tuple[Any, ...]] = None,
         scores: Optional[Tuple[Number, ...]] = None,
+        features: Optional[NDArray[np.int_]] = None,
         n_jobs: int = 1,
     ) -> None:
         """
@@ -41,6 +42,7 @@ class ChemicalSpaceBaseLayer(ABC):
             mols (Tuple[MolOrSmiles, ...]): A tuple of molecules or SMILES strings.
             indices (Optional[Tuple[Any, ...]], optional): A tuple of indices. Defaults to None.
             scores (Optional[Tuple[Number, ...]], optional): A tuple of scores. Defaults to None.
+            features (Optional[NDArray[np.int_]], optional): A numpy array of Morgan fingeprints. Defaults to None.
             n_jobs (int, optional): The number of jobs to use for parallel processing. Defaults to 1.
 
         Raises:
@@ -57,6 +59,8 @@ class ChemicalSpaceBaseLayer(ABC):
             raise ValueError("Number of indices must match number of molecules")
         if self.scores is not None and len(self.scores) != len(self.mols):
             raise ValueError("Number of scores must match number of molecules")
+
+        self._features: Union[NDArray[np.int_], None] = features
 
         self.name = self.__class__.__name__
 
@@ -88,6 +92,9 @@ class ChemicalSpaceBaseLayer(ABC):
             else:
                 self.scores += (score,)
 
+        if self._features is not None:
+            self._features = np.vstack([self._features, ecfp4_featurizer(mol_m)])
+
     def chunks(self, chunk_size: int) -> Generator[T, None, None]:  # type: ignore
         """
         Split the ChemicalSpaceBaseLayer into chunks of a given size.
@@ -109,6 +116,11 @@ class ChemicalSpaceBaseLayer(ABC):
                 ),
                 scores=(
                     self.scores[i : i + chunk_size] if self.scores is not None else None
+                ),
+                features=(
+                    self._features[i : i + chunk_size]
+                    if self._features is not None
+                    else None
                 ),
             )
 
@@ -134,6 +146,7 @@ class ChemicalSpaceBaseLayer(ABC):
             mols=self.mols[s],
             indices=self.indices[s] if self.indices is not None else None,
             scores=self.scores[s] if self.scores is not None else None,
+            features=self._features[s] if self._features is not None else None,
         )
 
     def mask(self, mask: Union[NDArray[np.bool_], List[bool]]) -> T:  # type: ignore
@@ -160,12 +173,14 @@ class ChemicalSpaceBaseLayer(ABC):
             if self.scores is not None
             else None
         )
+        features = self._features[mask_arr] if self._features is not None else None
 
         return factory(
             self,
             mols=tuple(mols),
             indices=tuple(indices) if indices is not None else None,
             scores=tuple(scores) if scores is not None else None,
+            features=features,
         )
 
     def deduplicate(self) -> T:  # type: ignore
@@ -181,6 +196,7 @@ class ChemicalSpaceBaseLayer(ABC):
         mols_lst: List[Mol] = []
         idx_lst: List[Any] = []
         scores_lst: List[Number] = []
+        features_idx: List[int] = []
 
         mols_hashes = parallel_map(hash_mol, self.mols, n_jobs=self.n_jobs)
 
@@ -199,6 +215,9 @@ class ChemicalSpaceBaseLayer(ABC):
                 if self.scores is not None:
                     scores_lst.append(self.scores[i])
 
+                if self._features is not None:
+                    features_idx.append(i)
+
         idx: Optional[Tuple[Any, ...]] = (
             tuple(idx_lst) if self.indices is not None else None
         )
@@ -206,7 +225,11 @@ class ChemicalSpaceBaseLayer(ABC):
             tuple(scores_lst) if self.scores is not None else None
         )
 
-        return factory(self, mols=tuple(mols_lst), indices=idx, scores=scores)
+        features = self._features[features_idx] if self._features is not None else None
+
+        return factory(
+            self, mols=tuple(mols_lst), indices=idx, scores=scores, features=features
+        )
 
     @cached_property
     def features(self) -> NDArray[np.int_]:
@@ -216,7 +239,12 @@ class ChemicalSpaceBaseLayer(ABC):
         Returns:
             NDArray[np.int_]: An array of features for each molecule.
         """
-        return np.array([ecfp4_featurizer(mol) for mol in self.mols], dtype=int)
+        if self._features is None:
+            self._features = np.array(
+                parallel_map(ecfp4_featurizer, self.mols, n_jobs=self.n_jobs), dtype=int
+            )
+
+        return self._features
 
     @classmethod
     def from_smi(cls: Type[T], path: str) -> T:
@@ -383,7 +411,16 @@ class ChemicalSpaceBaseLayer(ABC):
         else:
             score = self.scores + other.scores
 
-        return factory(self, mols=mols, indices=idx, scores=score)
+        if (self._features is None) or (other._features is None):
+            if (self._features is None) != (other._features is None):
+                warnings.warn(
+                    "One or more spaces do not have features. Features will be None"
+                )
+            features = None
+        else:
+            features = np.vstack([self._features, other._features])
+
+        return factory(self, mols=mols, indices=idx, scores=score, features=features)
 
     def __sub__(self, other: T) -> T:
         """
@@ -402,14 +439,12 @@ class ChemicalSpaceBaseLayer(ABC):
         if not isinstance(other, type(self)):
             raise TypeError("Can only subtract ChemicalSpace objects")
 
-        if self is other:
-            return factory(self, mols=())
-
         cache = set(parallel_map(hash_mol, other.mols, n_jobs=self.n_jobs))
 
         mols_lst: List[Mol] = []
         indices_lst: List[Any] = []
         scores_lst: List[Number] = []
+        features_idx: List[int] = []
 
         mols_hashes = parallel_map(hash_mol, self.mols, n_jobs=self.n_jobs)
 
@@ -425,6 +460,8 @@ class ChemicalSpaceBaseLayer(ABC):
                     indices_lst.append(self.indices[i])
                 if self.scores is not None:
                     scores_lst.append(self.scores[i])
+                if self._features is not None:
+                    features_idx.append(i)
 
         idx: Optional[Tuple[Any, ...]] = (
             tuple(indices_lst) if self.indices is not None else None
@@ -432,8 +469,11 @@ class ChemicalSpaceBaseLayer(ABC):
         scores: Optional[Tuple[Number, ...]] = (
             tuple(scores_lst) if self.scores is not None else None
         )
+        features = self._features[features_idx] if self._features is not None else None
 
-        return factory(self, mols=tuple(mols_lst), indices=idx, scores=scores)
+        return factory(
+            self, mols=tuple(mols_lst), indices=idx, scores=scores, features=features
+        )
 
     def __getitem__(self, idx: int | SliceType) -> Tuple[
         Mol | Tuple[Mol, ...],
@@ -493,7 +533,13 @@ class ChemicalSpaceBaseLayer(ABC):
             return self.__deepcopy__({})
 
     def __copy__(self) -> T:  # type: ignore
-        return factory(self, mols=self.mols, indices=self.indices, scores=self.scores)
+        return factory(
+            self,
+            mols=self.mols,
+            indices=self.indices,
+            scores=self.scores,
+            features=self._features,
+        )
 
     def __deepcopy__(self, memo: Dict[int, Any]) -> T:  # type: ignore
         _ = memo
@@ -504,7 +550,10 @@ class ChemicalSpaceBaseLayer(ABC):
         scores = (
             tuple([score for score in self.scores]) if self.scores is not None else None
         )
-        return factory(self, mols=mols, indices=indices, scores=scores)
+        features = self._features.copy() if self._features is not None else None
+        return factory(
+            self, mols=mols, indices=indices, scores=scores, features=features
+        )
 
     def __hash__(self) -> int:
         return hash(frozenset(parallel_map(hash_mol, self.mols, n_jobs=self.n_jobs)))
