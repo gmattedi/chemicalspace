@@ -56,6 +56,12 @@ def pick_samples(
     inputs: Sequence[Any] | NDArray[Any],
     scores: Optional[Sequence[Any] | NDArray[Any]] = None,
 ) -> NDArray[np.int_]:
+
+    if strategy not in strategies_dict:
+        raise ValueError(
+            f"Unknown strategy: {strategy}. Allowed strategies: {list(strategies_dict.keys())}"
+        )
+
     strategy_class = strategies_dict[strategy]
     strategy_instance = strategy_class(inputs, scores)
 
