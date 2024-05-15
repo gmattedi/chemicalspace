@@ -1,7 +1,7 @@
 import warnings
 from abc import ABC
 from functools import cached_property
-from typing import Any, Generator, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -19,8 +19,8 @@ from .utils import (
     factory,
     hash_mol,
     parallel_map,
-    safe_smiles2mol,
     smiles2mol,
+    safe_smiles2mol,
 )
 
 T = TypeVar("T", bound="ChemicalSpaceBaseLayer")
@@ -230,7 +230,7 @@ class ChemicalSpaceBaseLayer(ABC):
             ChemicalSpaceBaseLayer: A ChemicalSpaceBaseLayer object created from the SMILES strings.
 
         """
-        supplier = Chem.SmilesMolSupplier(path)
+        supplier = Chem.SmilesMolSupplier(path, titleLine=False)
 
         mols_lst: List[Mol] = []
         indices_lst: List[str] = []
@@ -366,17 +366,19 @@ class ChemicalSpaceBaseLayer(ABC):
 
         mols = self.mols + other.mols
         if (self.indices is None) or (other.indices is None):
-            warnings.warn(
-                "Both spaces must have indices to concatenate. Indices will be None"
-            )
+            if (self.indices is None) != (other.indices is None):
+                warnings.warn(
+                    "Both spaces should have indices to concatenate. Indices will be None"
+                )
             idx = None
         else:
             idx = self.indices + other.indices
 
         if (self.scores is None) or (other.scores is None):
-            warnings.warn(
-                "Both spaces must have scores to concatenate. Scores will be None"
-            )
+            if (self.scores is None) != (other.scores is None):
+                warnings.warn(
+                    "One or more spaces do not have scores. Scores will be None"
+                )
             score = None
         else:
             score = self.scores + other.scores
@@ -475,10 +477,42 @@ class ChemicalSpaceBaseLayer(ABC):
 
         return hash(self) == hash(other)
 
+    def copy(self, deep: bool = False) -> T:  # type: ignore
+        """
+        Create a copy of the object.
+
+        Parameters:
+            deep (bool): If True, perform a deep copy of the object. If False, perform a shallow copy.
+
+        Returns:
+            T: A copy of the object.
+        """
+        if not deep:
+            return self.__copy__()
+        else:
+            return self.__deepcopy__({})
+
+    def __copy__(self) -> T:  # type: ignore
+        return factory(self, mols=self.mols, indices=self.indices, scores=self.scores)
+
+    def __deepcopy__(self, memo: Dict[int, Any]) -> T:  # type: ignore
+        _ = memo
+        mols = tuple([Chem.Mol(mol) for mol in self.mols])
+        indices = (
+            tuple([idx for idx in self.indices]) if self.indices is not None else None
+        )
+        scores = (
+            tuple([score for score in self.scores]) if self.scores is not None else None
+        )
+        return factory(self, mols=mols, indices=indices, scores=scores)
+
     def __hash__(self) -> int:
-        return hash(tuple(parallel_map(hash_mol, self.mols, n_jobs=self.n_jobs)))
+        return hash(frozenset(parallel_map(hash_mol, self.mols, n_jobs=self.n_jobs)))
 
     def __repr__(self) -> str:
         idx_repr = len(self.indices) if self.indices is not None else "No"
         scores_repr = len(self.scores) if self.scores is not None else "No"
         return f"<{self.name}: {len(self)} molecules | {idx_repr} indices | {scores_repr} scores>"
+
+    def __str__(self) -> str:
+        return self.__repr__()

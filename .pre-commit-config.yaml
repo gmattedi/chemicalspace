@@ -21,6 +21,7 @@ repos:
         types_or:
           - python
           - pyi
+        args: [--fix]
 
   - repo: local
     hooks:
