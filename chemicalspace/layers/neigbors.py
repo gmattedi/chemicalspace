@@ -10,6 +10,7 @@ def _find_overlap(
     cs2: ChemicalSpaceBaseLayer,
     radius: float = 0.4,
     min_neighbors: int = 1,
+    metric: str = "jaccard",
 ) -> NDArray[np.int_]:
     """
     Find the indices of points in `cs2` that have at least `min_neighbors`
@@ -21,12 +22,13 @@ def _find_overlap(
         radius (float, optional): The radius within which to search for neighbors. Defaults to 0.4.
         min_neighbors (int, optional): The minimum number of neighbors required for a point in `cs2`
             to be considered overlapping with `cs1`. Defaults to 1.
+        metric (str, optional): The metric to use for the BallTree. Defaults to "jaccard".
 
     Returns:
         NDArray[np.int_]: The indices of points in `cs2` that have at least `min_neighbors` neighbors in `cs1`.
     """
 
-    tree = BallTree(cs1.features, metric="jaccard")
+    tree = BallTree(cs1.features, metric=metric)
     # Array of neighbor counts for each point in cs2
     num_neighbors: NDArray[np.int_] = np.array(
         tree.query_radius(

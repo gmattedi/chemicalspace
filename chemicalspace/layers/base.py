@@ -21,6 +21,7 @@ from .utils import (
     parallel_map,
     safe_smiles2mol,
     smiles2mol,
+    MolFeaturizerType,
 )
 
 T = TypeVar("T", bound="ChemicalSpaceBaseLayer")
@@ -37,6 +38,7 @@ class ChemicalSpaceBaseLayer(ABC):
         mols: Tuple[MolOrSmiles, ...],
         indices: Optional[Tuple[Any, ...]] = None,
         scores: Optional[Tuple[Number, ...]] = None,
+        featurizer: MolFeaturizerType = ecfp4_featurizer,
         features: Optional[NDArray[np.int_]] = None,
         n_jobs: int = 1,
     ) -> None:
@@ -47,7 +49,8 @@ class ChemicalSpaceBaseLayer(ABC):
             mols (Tuple[MolOrSmiles, ...]): A tuple of molecules or SMILES strings.
             indices (Optional[Tuple[Any, ...]], optional): A tuple of indices. Defaults to None.
             scores (Optional[Tuple[Number, ...]], optional): A tuple of scores. Defaults to None.
-            features (Optional[NDArray[np.int_]], optional): A numpy array of Morgan fingerprints. Defaults to None.
+            featurizer (MolFeaturizerType, optional): The featurizer function to use. Defaults to `ecfp4_featurizer`.
+            features (Optional[NDArray[np.int_]], optional): A numpy array of features. Defaults to None.
             n_jobs (int, optional): The number of jobs to use for parallel processing. Defaults to 1.
 
         Raises:
@@ -59,6 +62,7 @@ class ChemicalSpaceBaseLayer(ABC):
         self.indices = indices
         self.scores = scores
         self.n_jobs = n_jobs
+        self.featurizer = featurizer
 
         if self.indices is not None and len(self.indices) != len(self.mols):
             raise ValueError("Number of indices must match number of molecules")
@@ -98,7 +102,7 @@ class ChemicalSpaceBaseLayer(ABC):
                 self.scores += (score,)
 
         if self._features is not None:
-            self._features = np.vstack([self._features, ecfp4_featurizer(mol_m)])
+            self._features = np.vstack([self._features, self.featurizer(mol_m)])
 
     def chunks(self, chunk_size: int) -> Generator[T, None, None]:  # type: ignore
         """
@@ -246,7 +250,7 @@ class ChemicalSpaceBaseLayer(ABC):
         """
         if self._features is None:
             self._features = np.array(
-                parallel_map(ecfp4_featurizer, self.mols, n_jobs=self.n_jobs), dtype=int
+                parallel_map(self.featurizer, self.mols, n_jobs=self.n_jobs), dtype=int
             )
 
         return self._features

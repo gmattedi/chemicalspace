@@ -8,6 +8,11 @@ import pytest
 from rdkit.Chem import Mol
 
 from chemicalspace.layers.base import ChemicalSpaceBaseLayer
+from chemicalspace.layers.utils import (
+    ecfp4_featurizer,
+    maccs_featurizer,
+    MolFeaturizerType,
+)
 
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -61,10 +66,19 @@ def test_save(space: ChemicalSpaceBaseLayer, tmp_path: Path) -> None:
     assert space == space_loaded
 
 
-def test_features(space: ChemicalSpaceBaseLayer) -> None:
+@pytest.mark.parametrize("featurizer", [ecfp4_featurizer, maccs_featurizer])
+def test_features(space: ChemicalSpaceBaseLayer, featurizer: MolFeaturizerType) -> None:
+    space.featurizer = featurizer
+
     assert space._features is None
     assert isinstance(space.features, np.ndarray)
-    assert space.features.shape == (10, 1024)
+
+    if featurizer == ecfp4_featurizer:
+        assert space.features.shape == (10, 1024)
+    elif featurizer == maccs_featurizer:
+        assert space.features.shape == (10, 167)
+    else:
+        raise ValueError("Invalid featurizer")
 
     # Check that the features are cached
     assert space._features is not None
