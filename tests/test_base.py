@@ -140,7 +140,6 @@ def test_deduplicate(space: ChemicalSpaceBaseLayer) -> None:
 def test_dual_operations(
     space: ChemicalSpaceBaseLayer, other_space: ChemicalSpaceBaseLayer
 ) -> None:
-
     # Compute the features
     _ = space.features, other_space.features
 
