@@ -16,6 +16,7 @@ SliceType: TypeAlias = slice
 MolFeaturizerType: TypeAlias = Callable[
     [Mol], Union[Sequence[Number], NDArray[np.int_], NDArray[np.float_]]
 ]
+ArrayIntOrFloat: TypeAlias = NDArray[np.int_] | NDArray[np.float_]
 
 
 SEED: int = 42

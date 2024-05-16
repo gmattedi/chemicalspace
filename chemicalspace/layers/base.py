@@ -567,8 +567,23 @@ class ChemicalSpaceBaseLayer(ABC):
             self, mols=mols, indices=indices, scores=scores, features=features
         )
 
+    @staticmethod
+    def hash_mol(mol: Mol) -> str:
+        """
+        Compute the hash of a molecule.
+
+        Args:
+            mol (Mol): The molecule to hash.
+
+        Returns:
+            str: The hash of the molecule.
+        """
+        return Chem.MolToInchiKey(mol)
+
     def __hash__(self) -> int:
-        return hash(frozenset(parallel_map(hash_mol, self.mols, n_jobs=self.n_jobs)))
+        return hash(
+            frozenset(parallel_map(self.hash_mol, self.mols, n_jobs=self.n_jobs))
+        )
 
     def __repr__(self) -> str:
         idx_repr = len(self.indices) if self.indices is not None else "No"
