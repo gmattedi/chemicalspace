@@ -55,7 +55,9 @@ def ecfp4_featurizer(mol: Mol, radius: int = 2, n_bits: int = 1024) -> List[int]
     Returns:
         List[int]: The ECFP4 fingerprint as a list of integers.
     """
-    return AllChem.GetMorganFingerprintAsBitVect(mol, radius, nBits=n_bits).ToList()
+    return AllChem.GetMorganFingerprintAsBitVect(
+        mol, radius, nBits=n_bits, useChirality=True
+    ).ToList()
 
 
 def smiles2mol(smiles: str) -> Mol:

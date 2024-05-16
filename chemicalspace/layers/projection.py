@@ -65,12 +65,28 @@ def project_space(
 
 
 class ChemicalSpaceProjectionLayer(ChemicalSpaceBaseLayer):
+    """
+    A layer for projecting chemical space data to a lower-dimensional space.
+    """
+
     def project(
         self,
         n_components: int = 2,
         method: PROJECTION_METHODS = "tsne",
         seed: int = 42,
         n_jobs: int = -1,
-        **kwargs,
+        **method_kwargs,
     ) -> NDArray[np.float_]:
-        return project_space(self, n_components, method, seed, n_jobs, **kwargs)
+        """
+        Project the chemical space data to a lower-dimensional space.
+        Args:
+            n_components (int, optional): The number of components in the lower-dimensional space. Defaults to 2.
+            method (str, optional): The projection method to use. Defaults to "tsne".
+            seed (int, optional): The random seed for reproducibility. Defaults to 42.
+            n_jobs (int, optional): The number of parallel jobs to run. Defaults to -1.
+            **method_kwargs: Additional keyword arguments to pass to the projection algorithm.
+
+        Returns:
+
+        """
+        return project_space(self, n_components, method, seed, n_jobs, **method_kwargs)

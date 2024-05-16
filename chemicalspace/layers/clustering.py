@@ -28,6 +28,8 @@ def get_optimal_cluster_number(
         model (Any): The clustering model to use. Must be instantiable,
             have a `n_clusters` parameter, and a `fit_predict` method.
         min_clusters (int, optional): The minimum number of clusters to consider. Defaults to 2.
+        max_clusters (int, optional): The maximum number of clusters to consider.
+        metric (str, optional): The metric to use for silhouette score. Defaults to "jaccard".
         n_runs (int, optional): The number of runs to average the silhouette score. Defaults to 10.
 
     Returns:
@@ -52,7 +54,7 @@ def get_optimal_cluster_number(
             score = silhouette_score(features, labels, metric=metric)
         scores.append(float(score))
 
-    n = scan_n[np.argmax(scores)]
+    n = int(scan_n[np.argmax(scores)])
 
     return n
 
@@ -143,7 +145,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         n = len(set(labels))
 
         for i in range(n):
-            mask = labels == i
+            mask = np.array(labels == i)
             yield self.mask(mask)
 
     def ksplits(

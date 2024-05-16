@@ -10,4 +10,8 @@ class ChemicalSpace(
     ChemicalSpaceProjectionLayer,
     ChemicalSpaceAcquisitionLayer,
 ):
+    """
+    ChemicalSpace is a class that combines different layers to create a
+    complete representation of a chemical space"""
+
     pass

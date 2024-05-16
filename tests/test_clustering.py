@@ -1,6 +1,7 @@
 import os
 from typing import Optional
 
+import numpy as np
 import pytest
 
 from chemicalspace.layers.clustering import (
@@ -8,7 +9,6 @@ from chemicalspace.layers.clustering import (
     ChemicalSpaceClusteringLayer,
     get_optimal_cluster_number,
 )
-import numpy as np
 
 np.random.seed(42)
 
@@ -41,7 +41,7 @@ def test_silhouette(
     n_clusters = get_optimal_cluster_number(space.features, model=obj)
 
     if method == "kmedoids":
-        assert n_clusters == 4
+        assert n_clusters == 3
     elif method == "agglomerative-clustering":
         assert n_clusters == 5
     else:

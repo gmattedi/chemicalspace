@@ -27,6 +27,11 @@ T = TypeVar("T", bound="ChemicalSpaceBaseLayer")
 
 
 class ChemicalSpaceBaseLayer(ABC):
+    """
+    The base class for the ChemicalSpace object.
+    Implements the core functionality for the ChemicalSpace object.
+    """
+
     def __init__(
         self,
         mols: Tuple[MolOrSmiles, ...],

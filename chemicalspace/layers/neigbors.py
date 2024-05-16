@@ -12,7 +12,8 @@ def _find_overlap(
     min_neighbors: int = 1,
 ) -> NDArray[np.int_]:
     """
-    Find the indices of points in `cs2` that have at least `min_neighbors` neighbors in `cs1` within a given `radius`.
+    Find the indices of points in `cs2` that have at least `min_neighbors`
+    neighbors in `cs1` within a given `radius` distance.
 
     Parameters:
         cs1 (ChemicalSpaceBaseLayer): The first chemical space layer.
@@ -42,12 +43,38 @@ def _find_overlap(
 class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
 
     def find_overlap(
-        self, other: T, radius: float = 0.4, min_neighbors: int = 1  # type: ignore
+        self, other: T, radius: float = 0.6, min_neighbors: int = 1  # type: ignore
     ) -> NDArray[np.int_]:
-        return _find_overlap(self, other, radius, min_neighbors)
+        """
+        Find the indices of points in `self` that have at least `min_neighbors` neighbors
+        in `other` within a given `radius` similarity threshold.
 
-    def carve(self, other: T, radius: float = 0.4, min_neighbors: int = 1) -> T:  # type: ignore
-        idx = self.find_overlap(other, radius, min_neighbors=min_neighbors)
+        Args:
+            other (ChemicalSpaceBaseLayer): The other chemical space layer.
+            radius (float, optional): The radius within which to search for neighbors. Defaults to 0.6.
+            min_neighbors (int, optional): The minimum number of neighbors required for a point in `other`
+
+        Returns:
+            NDArray[np.int_]: The indices of points in `other` that have at least `min_neighbors` neighbors in `self`.
+
+        """
+        return _find_overlap(other, self, 1 - radius, min_neighbors)
+
+    def carve(self, other: T, radius: float = 0.6, min_neighbors: int = 1) -> T:  # type: ignore
+        """
+        Remove points from `self` that have at least `min_neighbors` neighbors in
+        `other` within a given `radius` similarity threshold.
+
+        Args:
+            other (ChemicalSpaceBaseLayer): The other chemical space layer.
+            radius (float, optional): The radius within which to search for neighbors. Defaults to 0.6.
+            min_neighbors (int, optional): The minimum number of neighbors required for a point in `other`
+
+        Returns:
+            T: A new chemical space layer with points removed.
+
+        """
+        idx = self.find_overlap(other, 1 - radius, min_neighbors=min_neighbors)
         mask = np.ones(len(self.features), dtype=bool)
         mask[idx] = False
         return self.mask(mask)
