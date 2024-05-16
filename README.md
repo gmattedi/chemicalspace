@@ -1,9 +1,13 @@
 # ChemicalSpace
+
 An Object-Oriented Representation for Chemical Spaces
 
-`ChemicalSpace` is a Python package that provides an object-oriented representation for chemical spaces. It is designed to be used in conjunction with the `RDKit` package, which provides the underlying cheminformatics functionality.
+`ChemicalSpace` is a Python package that provides an object-oriented
+representation for chemical spaces. It is designed to be used in conjunction
+with the `RDKit` package, which provides the underlying cheminformatics functionality.
 
 ## Installation
+
 To install `ChemicalSpace`, you can use `pip`:
 
 ```bash
@@ -11,10 +15,16 @@ pip install .
 ```
 
 ## Usage
-The main class in `ChemicalSpace` is `ChemicalSpace`. This class is designed to represent a chemical space, which is a collection of molecules. The `ChemicalSpace` class provides a number of methods for working with chemical spaces, including methods for reading and writing chemical spaces, filtering, clustering and picking from chemical spaces.
+
+The main class in `ChemicalSpace` is `ChemicalSpace`.
+The class provides a number of methods for working with chemical spaces,
+including reading and writing, filtering, clustering and
+picking from chemical spaces.
 
 ### Initialization
-A `ChemicalSpace` can be initialized from a set of SMILES strings or `RDKit` molecules. It optionally takes molecule indices and scores as arguments.
+
+A `ChemicalSpace` can be initialized from SMILES strings or `RDKit` molecules.
+It optionally takes molecule indices and scores as arguments.
 
 ```python
 from chemicalspace import ChemicalSpace
@@ -27,19 +37,279 @@ space = ChemicalSpace(mols=smiles, indices=indices, scores=scores)
 
 print(space)
 ```
+
 ```text
 <ChemicalSpace: 3 molecules | 3 indices | 3 scores>
 ```
 
 ### Reading and Writing
+
 A `ChemicalSpace` can be read from and written to SMI and SDF files.
 
 ```python
 from chemicalspace import ChemicalSpace
 
+# Load from SMI file
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
 space.to_smi("outputs1.smi")
 
+# Load from SDF file
 space = ChemicalSpace.from_sdf("tests/data/inputs1.sdf")
 space.to_sdf("outputs1.sdf")
+
+print(space)
+```
+
+```text
+<ChemicalSpace: 10 molecules | 10 indices | No scores>
+```
+
+### Indexing, Slicing and Masking
+
+#### Indexing
+
+Single indexing and builtin slicing returns a tuple of the molecule(s), index(es) and score(s).
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+
+print(space[0])
+```
+
+```text
+(<rdkit.Chem.rdchem.Mol object at 0x76dd0ded8900>, 'CHEMBL2205617', None)
+```
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+
+print(space[:2])
+```
+
+```text
+(
+  (<rdkit.Chem.rdchem.Mol object at 0x76dd0ded8dd0>,
+   <rdkit.Chem.rdchem.Mol object at 0x76dd0ded8e40>),
+  ('CHEMBL2205617', 'CHEMBL3322349'),
+  None
+)
+```
+
+#### Slicing
+
+Slicing with `.slice` returns a new `ChemicalSpace` object.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space_sliced = space.slice(start=0, stop=6, step=2)
+
+print(space_sliced)
+```
+
+```text
+<ChemicalSpace: 3 molecules | 3 indices | No scores>
+```
+
+#### Masking
+
+Masking with `.mask` returns a new `ChemicalSpace` object.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+mask = [True, False, True, False, True, False, True, False, True, False]
+space_masked = space.mask(mask)
+
+print(space_masked)
+```
+
+```text
+<ChemicalSpace: 5 molecules | 5 indices | No scores>
+```
+
+### Deduplicating
+
+Deduplicating a `ChemicalSpace` object removes duplicate molecules.  
+See [Hashing and Identity](#hashing-and-identity) for details on molecule identity.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space_twice = space + space  # 20 molecules
+space_deduplicated = space_twice.deduplicate()  # 10 molecules
+
+print(space_deduplicated)
+```
+
+```text
+<ChemicalSpace: 10 molecules | 10 indices | No scores>
+```
+
+### Chunking
+
+A `ChemicalSpace` object can be chunked into smaller `ChemicalSpace` objects.   
+The `.chunks` method returns a generator of `ChemicalSpace` objects.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+chunks = space.chunks(chunk_size=3)
+
+for chunk in chunks:
+    print(chunk)
+```
+
+```text
+<ChemicalSpace: 3 molecules | 3 indices | No scores>
+<ChemicalSpace: 3 molecules | 3 indices | No scores>
+<ChemicalSpace: 3 molecules | 3 indices | No scores>
+<ChemicalSpace: 1 molecules | 1 indices | No scores>
+```
+
+### Featurizing
+
+A `ChemicalSpace` object can be featurized into a `numpy` array as
+the ECFP4/Morgan2 fingerprint of the molecules.
+The features are cached for subsequent calls,
+and spaces generated by a `ChemicalSpace` object (e.g. by slicing, masking, chunking)
+inherit the respective features.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space_slice = space.slice(start=0, stop=6, step=2)
+
+print(space.features.shape)
+print(space_slice.features.shape)
+```
+
+```text
+(10, 1024)
+(3, 1024)
+```
+
+### Binary Operations
+
+#### Single entries
+
+Single entries as SMILES strings or `RDKit` molecules
+can be added to a `ChemicalSpace` object.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space.add("CCO", "mol11", 0.1)
+
+print(space)
+```
+
+```text
+<ChemicalSpace: 11 molecules | 11 indices | No scores>
+```
+
+#### Chemical spaces
+
+Two `ChemicalSpace` objects can be added together.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space1 = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space2 = ChemicalSpace.from_smi("tests/data/inputs2.smi")
+
+space = space1 + space2
+
+print(space)
+```
+
+```text
+<ChemicalSpace: 25 molecules | 25 indices | No scores>
+```
+
+And subtracted from each other to return only molecules in `space1`
+that are not in `space2`.   
+See [Hashing and Identity](#hashing-and-identity) for more details.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space1 = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space2 = ChemicalSpace.from_smi("tests/data/inputs2.smi")
+
+space = space1 - space2
+
+print(space)
+```
+
+```text
+<ChemicalSpace: 5 molecules | 5 indices | No scores>
+```
+
+### Hashing and Identity
+
+Individual molecules in a chemical space are hashed by their InChI Keys only.   
+Indices and scores **do not** affect the hashing process.
+
+```python
+from rdkit import Chem
+from rdkit.Chem import inchi
+
+mol = Chem.MolFromSmiles("c1ccccc1")
+inchi_key = inchi.MolToInchiKey(mol)
+
+print(inchi_key)
+```
+
+```text
+UHOVQNZJYSORNB-UHFFFAOYSA-N
+```
+
+`ChemicalSpace` objects are hashed by their molecular hashes, in an **order-independent** manner.
+
+```python
+from rdkit import Chem
+from rdkit.Chem import inchi
+from chemicalspace import ChemicalSpace
+
+mol = Chem.MolFromSmiles("c1ccccc1")
+inchi_key = inchi.MolToInchiKey(mol)
+
+space = ChemicalSpace(mols=(mol,))
+
+assert hash(space) == hash(frozenset((inchi_key,)))
+```
+
+```text
+True
+```
+
+The identity of a `ChemicalSpace` is evaluated on its hashed representation.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space1 = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space1_again = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space2 = ChemicalSpace.from_smi("tests/data/inputs2.smi")
+
+print(space1 == space1)
+print(space1 == space1_again)
+print(space1 == space2)
+```
+
+```text
+True
+True
+False
 ```

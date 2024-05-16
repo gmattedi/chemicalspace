@@ -42,7 +42,7 @@ class ChemicalSpaceBaseLayer(ABC):
             mols (Tuple[MolOrSmiles, ...]): A tuple of molecules or SMILES strings.
             indices (Optional[Tuple[Any, ...]], optional): A tuple of indices. Defaults to None.
             scores (Optional[Tuple[Number, ...]], optional): A tuple of scores. Defaults to None.
-            features (Optional[NDArray[np.int_]], optional): A numpy array of Morgan fingeprints. Defaults to None.
+            features (Optional[NDArray[np.int_]], optional): A numpy array of Morgan fingerprints. Defaults to None.
             n_jobs (int, optional): The number of jobs to use for parallel processing. Defaults to 1.
 
         Raises:
@@ -365,7 +365,7 @@ class ChemicalSpaceBaseLayer(ABC):
                 mol.SetProp(scores_prop, str(score))
             w.write(mol)
 
-        w.close()
+        w.close()  # type: ignore
 
     def __len__(self) -> int:
         """
