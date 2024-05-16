@@ -1,9 +1,0 @@
-{
-    "files.autoSave": "afterDelay",
-    "editor.fontFamily": "JetBrains Mono",
-    "python.defaultInterpreterPath": "/home/giulio/.miniconda3/envs/dolomite/bin/python",
-    "python.testing.pytestPath": "/home/giulio/.miniconda3/envs/dolomite/bin/pytest",
-    "black-formatter.interpreter": [
-        "/home/giulio/.miniconda3/envs/dolomite/bin/python"
-    ]
-}
