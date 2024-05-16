@@ -32,6 +32,8 @@ def test_project(
     else:
         kwargs = {}
 
-    proj = space.project(n_components=n_components, method=method, n_jobs=1, **kwargs)
+    proj = space.project(
+        n_components=n_components, method=method, metric="jaccard", n_jobs=1, **kwargs
+    )
     assert isinstance(proj, np.ndarray)
     assert proj.shape == (10, n_components)

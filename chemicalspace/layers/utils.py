@@ -1,16 +1,21 @@
 from functools import reduce
-from typing import Any, Callable, Iterable, List, TypeAlias
+from typing import Any, Callable, Iterable, List, TypeAlias, Sequence, Union
 
+import numpy as np
 from joblib import Parallel, delayed
+from numpy.typing import NDArray
 from rdkit import Chem
 from rdkit.Chem import AllChem, Mol, inchi  # type: ignore
 
-Number: TypeAlias = int | float
-MaybeIndex: TypeAlias = None | Any
-MaybeScore: TypeAlias = None | Number
-MolOrSmiles: TypeAlias = Mol | str
+Number: TypeAlias = Union[int, float]
+MaybeIndex: TypeAlias = Union[Any, None]
+MaybeScore: TypeAlias = Union[Number, None]
+MolOrSmiles: TypeAlias = Union[Mol, str]
 IntOrNone: TypeAlias = int | None
 SliceType: TypeAlias = slice
+MolFeaturizerType: TypeAlias = Callable[
+    [Mol], Union[Sequence[Number], NDArray[np.int_], NDArray[np.float_]]
+]
 
 
 SEED: int = 42
@@ -58,6 +63,19 @@ def ecfp4_featurizer(mol: Mol, radius: int = 2, n_bits: int = 1024) -> List[int]
     return AllChem.GetMorganFingerprintAsBitVect(
         mol, radius, nBits=n_bits, useChirality=True
     ).ToList()
+
+
+def maccs_featurizer(mol: Mol) -> List[int]:
+    """
+    Calculates the MACCS fingerprint for a given molecule.
+
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): The molecule to calculate the fingerprint for.
+
+    Returns:
+        List[int]: The MACCS fingerprint as a list of integers.
+    """
+    return list(AllChem.GetMACCSKeysFingerprint(mol))
 
 
 def smiles2mol(smiles: str) -> Mol:

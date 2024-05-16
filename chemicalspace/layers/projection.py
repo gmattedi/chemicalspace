@@ -13,6 +13,7 @@ def project_space(
     chemical_space: ChemicalSpaceBaseLayer,
     n_components: int = 2,
     method: PROJECTION_METHODS = "tsne",
+    metric: str = "jaccard",
     seed: int = SEED,
     n_jobs: int = 1,
     **kwargs,
@@ -24,6 +25,7 @@ def project_space(
         chemical_space (ChemicalSpaceBaseLayer): The chemical space layer to project.
         n_components (int, optional): The number of components in the lower-dimensional space. Defaults to 2.
         method (str, optional): The projection method to use. Defaults to "tsne".
+        metric (str, optional): The metric to use for the projection. Defaults to "jaccard".
         seed (int, optional): The random seed for reproducibility. Defaults to SEED.
         n_jobs (int, optional): The number of parallel jobs to run. Defaults to 1.
         **kwargs: Additional keyword arguments to pass to the projection algorithm.
@@ -38,7 +40,7 @@ def project_space(
         projector = UMAP(
             n_components=n_components,
             random_state=seed,
-            metric="jaccard",
+            metric=metric,
             n_jobs=n_jobs,
             **kwargs,
         )
@@ -48,7 +50,7 @@ def project_space(
         projector = TSNE(
             n_components=n_components,
             random_state=seed,
-            metric="jaccard",
+            metric=metric,
             n_jobs=n_jobs,
             **kwargs,
         )
@@ -73,6 +75,7 @@ class ChemicalSpaceProjectionLayer(ChemicalSpaceBaseLayer):
         self,
         n_components: int = 2,
         method: PROJECTION_METHODS = "tsne",
+        metric: str = "jaccard",
         seed: int = 42,
         n_jobs: int = -1,
         **method_kwargs,
@@ -82,6 +85,7 @@ class ChemicalSpaceProjectionLayer(ChemicalSpaceBaseLayer):
         Args:
             n_components (int, optional): The number of components in the lower-dimensional space. Defaults to 2.
             method (str, optional): The projection method to use. Defaults to "tsne".
+            metric (str, optional): The metric to use for the projection. Defaults to "jaccard".
             seed (int, optional): The random seed for reproducibility. Defaults to 42.
             n_jobs (int, optional): The number of parallel jobs to run. Defaults to -1.
             **method_kwargs: Additional keyword arguments to pass to the projection algorithm.
@@ -89,4 +93,12 @@ class ChemicalSpaceProjectionLayer(ChemicalSpaceBaseLayer):
         Returns:
 
         """
-        return project_space(self, n_components, method, seed, n_jobs, **method_kwargs)
+        return project_space(
+            self,
+            n_components,
+            method,
+            metric=metric,
+            seed=seed,
+            n_jobs=n_jobs,
+            **method_kwargs,
+        )
