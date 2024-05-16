@@ -474,7 +474,7 @@ space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
 space_pick_random = space.pick(n=3, strategy='random')
 print(space_pick_random)
 
-space.scores = tuple(range(len(space)))  # Assign scores for picking
+space.scores = tuple(range(len(space)))  # Assign dummy scores
 space_pick_greedy = space.pick(n=3, strategy='greedy')
 print(space_pick_greedy)
 ```
@@ -482,4 +482,23 @@ print(space_pick_greedy)
 ```text
 <ChemicalSpace: 3 molecules | 3 indices | No scores>
 <ChemicalSpace: 3 molecules | 3 indices | 3 scores>
+```
+
+# Development
+
+## Installation
+
+Install the development dependencies with `pip`:
+
+```bash
+pip install -e .[dev]
+```
+
+## Hooks
+
+The project uses `pre-commit` for code formatting and linting.
+Install the hooks with:
+
+```bash
+pre-commit install
 ```
