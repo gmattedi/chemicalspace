@@ -78,7 +78,6 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         self,
         n_clusters: CLUSTER_NUMBER = None,
         method: CLUSTERING_METHODS = "kmedoids",
-        metric: str = "jaccard",
         seed: int = SEED,
         **kwargs,
     ) -> NDArray[np.int_]:
@@ -89,7 +88,6 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
             n_clusters (int | None): The number of clusters to create.
                 If None, the number of clusters will be determined by silhouette score
             method (str): The clustering method to use.
-            metric (str): The distance metric to use for clustering.
             seed (int, optional): The random seed for reproducibility. Defaults to SEED.
             **kwargs: Additional keyword arguments to pass to the clustering algorithm.
 
@@ -100,12 +98,14 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         if method == "kmedoids":
             from sklearn_extra.cluster import KMedoids
 
-            obj = partial(KMedoids, metric=metric, random_state=seed)
+            obj = partial(KMedoids, metric=self.metric, random_state=seed)
 
         elif method == "agglomerative-clustering":
             from sklearn.cluster import AgglomerativeClustering
 
-            obj = partial(AgglomerativeClustering, metric=metric, linkage="complete")
+            obj = partial(
+                AgglomerativeClustering, metric=self.metric, linkage="complete"
+            )
 
         else:
             raise ValueError(f"Invalid clustering method: {method}")
@@ -125,7 +125,6 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         self,
         n_clusters: CLUSTER_NUMBER = None,
         method: CLUSTERING_METHODS = "kmedoids",
-        metric: str = "jaccard",
         seed: int = SEED,
         **kwargs,
     ) -> Generator[ChemicalSpaceBaseLayer, Any, None]:
@@ -136,7 +135,6 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
             n_clusters (int | None): The number of clusters to create.
                 If None, the number of clusters will be determined by silhouette score
             method (CLUSTERING_METHODS): The clustering method to use.
-            metric (str): The distance metric to use for clustering.
             seed (int, optional): The random seed for reproducibility. Defaults to SEED.
             **kwargs: Additional keyword arguments to be passed to the clustering method.
 
@@ -145,7 +143,10 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
                 cluster as a ChemicalSpaceBaseLayer object.
         """
         labels = self.cluster(
-            n_clusters=n_clusters, method=method, metric=metric, seed=seed, **kwargs
+            n_clusters=n_clusters,
+            method=method,
+            seed=seed,
+            **kwargs,
         )
 
         n = len(set(labels))
@@ -158,7 +159,6 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         self,
         n_splits: int,
         method: CLUSTERING_METHODS = "kmedoids",
-        metric: str = "jaccard",
         seed: int = SEED,
         **kwargs,
     ) -> Generator[
@@ -170,7 +170,6 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         Args:
             n_splits (int): The number of splits to generate.
             method (str): The clustering method to use.
-            metric (str): The distance metric to use for clustering.
             seed (int, optional): The random seed for reproducibility. Defaults to SEED.
             **kwargs: Additional keyword arguments to pass to the clustering algorithm.
 
@@ -180,7 +179,10 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         """
         clusters = list(
             self.yield_clusters(
-                n_clusters=n_splits, method=method, metric=metric, seed=seed, **kwargs
+                n_clusters=n_splits,
+                method=method,
+                seed=seed,
+                **kwargs,
             )
         )
 

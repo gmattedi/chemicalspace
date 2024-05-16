@@ -39,6 +39,7 @@ class ChemicalSpaceBaseLayer(ABC):
         indices: Optional[Tuple[Any, ...]] = None,
         scores: Optional[Tuple[Number, ...]] = None,
         featurizer: MolFeaturizerType = ecfp4_featurizer,
+        metric: str = "jaccard",
         features: Optional[NDArray[np.int_]] = None,
         n_jobs: int = 1,
     ) -> None:
@@ -50,6 +51,7 @@ class ChemicalSpaceBaseLayer(ABC):
             indices (Optional[Tuple[Any, ...]], optional): A tuple of indices. Defaults to None.
             scores (Optional[Tuple[Number, ...]], optional): A tuple of scores. Defaults to None.
             featurizer (MolFeaturizerType, optional): The featurizer function to use. Defaults to `ecfp4_featurizer`.
+            metric (str, optional): Distance metric supported by `scikit-learn`. Defaults to "jaccard".
             features (Optional[NDArray[np.int_]], optional): A numpy array of features. Defaults to None.
             n_jobs (int, optional): The number of jobs to use for parallel processing. Defaults to 1.
 
@@ -63,6 +65,7 @@ class ChemicalSpaceBaseLayer(ABC):
         self.scores = scores
         self.n_jobs = n_jobs
         self.featurizer = featurizer
+        self.metric = metric
 
         if self.indices is not None and len(self.indices) != len(self.mols):
             raise ValueError("Number of indices must match number of molecules")
