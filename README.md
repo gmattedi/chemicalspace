@@ -484,6 +484,63 @@ print(space_pick_greedy)
 <ChemicalSpace: 3 molecules | 3 indices | 3 scores>
 ```
 
+## Uniqueness and Diversity
+
+### Uniqueness
+
+The uniqueness of a `ChemicalSpace` object can be calculated by the number of unique molecules.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space_twice = space + space  # 20 molecules
+uniqueness = space_twice.uniqueness()
+
+print(uniqueness)
+```
+
+```text
+0.5
+```
+
+### Diversity
+
+The diversity of a `ChemicalSpace` object can be calculated as:
+
+- The average of the pairwise distance matrix
+- The normalized [Vendi score](https://arxiv.org/abs/2210.02410) of the same distance matrix.
+
+The Vendi score can be interpreted as the effective number of molecules in the space,
+and here it is normalized by the number of molecules in the space taking values in the range `[0, 1]`.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+
+diversity_int = space.diversity(method='internal-distance')
+diversity_vendi = space.diversity(method='vendi')
+print(diversity_int)
+print(diversity_vendi)
+
+# Dummy space with the same molecule len(space) times
+space_redundant = ChemicalSpace(mols=tuple([space.mols[0]] * len(space)))
+
+diversity_int_redundant = space_redundant.diversity(method='internal-distance')
+diversity_vendi_redundant = space_redundant.diversity(method='vendi')
+
+print(diversity_int_redundant)
+print(diversity_vendi_redundant)
+```
+
+```text
+0.7730273985449335
+0.12200482273434754
+0.0
+0.1
+```
+
 # Development
 
 ## Installation
