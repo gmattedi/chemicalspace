@@ -260,21 +260,29 @@ print(space)
 
 ### Hashing and Identity
 
-Individual molecules in a chemical space are hashed by their InChI Keys only.   
-Indices and scores **do not** affect the hashing process.
+Individual molecules in a chemical space are hashed by their InChI Keys only (by default), or by InChI Keys and index.
+Scores **do not** affect the hashing process.
 
 ```python
-from rdkit import Chem
-from rdkit.Chem import inchi
+from chemicalspace import ChemicalSpace
 
-mol = Chem.MolFromSmiles("c1ccccc1")
-inchi_key = inchi.MolToInchiKey(mol)
+smiles = ('CCO', 'CCN', 'CCl')
+indices = ("mol1", "mol2", "mol3")
 
-print(inchi_key)
+# Two spaces with the same molecules, and indices
+# But one space includes the indices in the hashing process
+space_indices = ChemicalSpace(mols=smiles, indices=indices, hash_indices=True)
+space_no_indices = ChemicalSpace(mols=smiles, indices=indices, hash_indices=False)
+
+print(space_indices == space_indices)
+print(space_indices == space_no_indices)
+print(space_no_indices == space_no_indices)
 ```
 
 ```text
-UHOVQNZJYSORNB-UHFFFAOYSA-N
+True
+False
+True
 ```
 
 `ChemicalSpace` objects are hashed by their molecular hashes, in an **order-independent** manner.
@@ -290,10 +298,6 @@ inchi_key = inchi.MolToInchiKey(mol)
 space = ChemicalSpace(mols=(mol,))
 
 assert hash(space) == hash(frozenset((inchi_key,)))
-```
-
-```text
-True
 ```
 
 The identity of a `ChemicalSpace` is evaluated on its hashed representation.

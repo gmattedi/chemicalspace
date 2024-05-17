@@ -194,6 +194,18 @@ def test_copy(space: ChemicalSpaceBaseLayer) -> None:
     assert id(space.mols[0]) != id(space_deep.mols[0])
 
 
+@pytest.mark.parametrize("use_indices", [True, False])
+def test_hashing(use_indices: bool, input_file: str = INPUT_SMI_FILES[0]) -> None:
+    space = ChemicalSpaceBaseLayer.from_smi(input_file, hash_indices=use_indices)
+    space_noindices = ChemicalSpaceBaseLayer.from_smi(input_file, hash_indices=False)
+
+    assert space == space
+    if use_indices:
+        assert space != space_noindices
+    else:
+        assert space == space_noindices
+
+
 def test_deduplicate(space: ChemicalSpaceBaseLayer) -> None:
     space_twice = space + space
 
