@@ -120,7 +120,6 @@ class ChemicalSpaceDiversityLayer(ChemicalSpaceBaseLayer):
 
         return diversity_methods_dict[method](self.features, self.metric, **kwargs)
 
-    @property
     def uniqueness(self) -> float:
         """
         Return the fraction of unique molecules in the chemical space.

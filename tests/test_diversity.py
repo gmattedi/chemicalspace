@@ -22,7 +22,7 @@ def space() -> ChemicalSpaceDiversityLayer:
 
 
 def test_uniqueness(space: ChemicalSpaceDiversityLayer) -> None:
-    uniqueness = space.uniqueness
+    uniqueness = space.uniqueness()
     assert isinstance(uniqueness, float)
     assert 0 <= uniqueness <= 1
 
