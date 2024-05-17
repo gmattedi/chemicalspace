@@ -133,6 +133,43 @@ def test_slicing(space: ChemicalSpaceBaseLayer) -> None:
     assert np.allclose(space_chunks_lst[-1]._features, space._features[-1:])  # type: ignore
 
 
+def test_attribute_inheritance(space: ChemicalSpaceBaseLayer) -> None:
+    """
+    Test that the class factory properly propagates attributes to the new class.
+    """
+
+    class DerivedSpace(ChemicalSpaceBaseLayer):
+        def __init__(self, new_parameter: int, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.new_parameter = new_parameter
+
+    derived_space = DerivedSpace(
+        new_parameter=42, mols=space.mols, indices=space.indices
+    )
+
+    derived_space_slice: DerivedSpace = derived_space.slice(0, 5)
+    assert derived_space_slice.new_parameter == 42
+
+    derived_space_mask: DerivedSpace = derived_space.mask([True, False] * 5)
+    assert derived_space_mask.new_parameter == 42
+
+    derived_space_chunks: Generator[DerivedSpace, None, None] = derived_space.chunks(3)
+    for chunk in derived_space_chunks:
+        assert chunk.new_parameter == 42
+
+    derived_space_copy: DerivedSpace = derived_space.copy()
+    assert derived_space_copy.new_parameter == 42
+
+    derived_space_add: DerivedSpace = derived_space + derived_space
+    assert derived_space_add.new_parameter == 42
+
+    derived_space_sub: DerivedSpace = derived_space - derived_space
+    assert derived_space_sub.new_parameter == 42
+
+    derived_space_dedup: DerivedSpace = derived_space.deduplicate()
+    assert derived_space_dedup.new_parameter == 42
+
+
 def test_copy(space: ChemicalSpaceBaseLayer) -> None:
     space_shallow: ChemicalSpaceBaseLayer = space.copy(deep=False)
     assert space == space_shallow
