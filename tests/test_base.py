@@ -34,12 +34,26 @@ def other_space() -> ChemicalSpaceBaseLayer:
     return ChemicalSpaceBaseLayer.from_smi(INPUT_SMI_FILES[1])
 
 
-@pytest.mark.parametrize("input", INPUT_SMI_FILES[:1] + INPUT_SDF_FILES[:1])
-def test_classmethods(input: str) -> None:
-    if input.endswith(".smi"):
-        space = ChemicalSpaceBaseLayer.from_smi(input)
+@pytest.mark.parametrize(
+    "input_file,featurizer,metric",
+    [
+        (INPUT_SMI_FILES[0], ecfp4_featurizer, "jaccard"),
+        (INPUT_SMI_FILES[0], maccs_featurizer, "jaccard"),
+        (INPUT_SDF_FILES[0], ecfp4_featurizer, "euclidean"),
+        (INPUT_SDF_FILES[0], maccs_featurizer, "euclidean"),
+    ],
+)
+def test_classmethods(
+    input_file: str, featurizer: MolFeaturizerType, metric: str
+) -> None:
+    if input_file.endswith(".smi"):
+        space = ChemicalSpaceBaseLayer.from_smi(
+            input_file, featurizer=featurizer, metric=metric
+        )
     else:
-        space = ChemicalSpaceBaseLayer.from_sdf(input)
+        space = ChemicalSpaceBaseLayer.from_sdf(
+            input_file, featurizer=featurizer, metric=metric
+        )
 
     assert len(space) == 10
 
