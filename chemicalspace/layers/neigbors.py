@@ -60,7 +60,7 @@ class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
             NDArray[np.int_]: The indices of points in `other` that have at least `min_neighbors` neighbors in `self`.
 
         """
-        return _find_overlap(other, self, 1 - radius, min_neighbors)
+        return _find_overlap(other, self, 1 - radius, min_neighbors, metric=self.metric)
 
     def carve(self, other: T, radius: float = 0.6, min_neighbors: int = 1) -> T:  # type: ignore
         """
