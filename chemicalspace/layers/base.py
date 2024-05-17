@@ -41,6 +41,7 @@ class ChemicalSpaceBaseLayer(ABC):
         featurizer: MolFeaturizerType = ecfp4_featurizer,
         metric: str = "jaccard",
         features: Optional[NDArray[np.int_]] = None,
+        hash_indices: bool = False,
         n_jobs: int = 1,
     ) -> None:
         """
@@ -53,6 +54,7 @@ class ChemicalSpaceBaseLayer(ABC):
             featurizer (MolFeaturizerType, optional): The featurizer function to use. Defaults to `ecfp4_featurizer`.
             metric (str, optional): Distance metric supported by `scikit-learn`. Defaults to "jaccard".
             features (Optional[NDArray[np.int_]], optional): A numpy array of features. Defaults to None.
+            hash_indices (bool, optional): Whether include indices when hashing molecules. Defaults to False.
             n_jobs (int, optional): The number of jobs to use for parallel processing. Defaults to 1.
 
         Raises:
@@ -66,6 +68,7 @@ class ChemicalSpaceBaseLayer(ABC):
         self.n_jobs = n_jobs
         self.featurizer = featurizer
         self.metric = metric
+        self.hash_indices = hash_indices
 
         if self.indices is not None and len(self.indices) != len(self.mols):
             raise ValueError("Number of indices must match number of molecules")
@@ -616,9 +619,20 @@ class ChemicalSpaceBaseLayer(ABC):
         return Chem.MolToInchiKey(mol)
 
     def __hash__(self) -> int:
-        return hash(
-            frozenset(parallel_map(self.hash_mol, self.mols, n_jobs=self.n_jobs))
+
+        inchi_keys: List[str] = parallel_map(
+            self.hash_mol, self.mols, n_jobs=self.n_jobs
         )
+
+        if self.hash_indices:
+            indices = self.indices if self.indices is not None else [""] * len(self)
+            mol_strings = [
+                f"{inchi_key}@{idx}" for inchi_key, idx in zip(inchi_keys, indices)
+            ]
+        else:
+            mol_strings = inchi_keys
+
+        return hash(frozenset(mol_strings))
 
     def __repr__(self) -> str:
         idx_repr = len(self.indices) if self.indices is not None else "No"
