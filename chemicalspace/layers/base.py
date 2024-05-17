@@ -240,7 +240,11 @@ class ChemicalSpaceBaseLayer(ABC):
         features = self._features[features_idx] if self._features is not None else None
 
         return factory(
-            self, mols=tuple(mols_lst), indices=idx, scores=scores, features=features
+            self,
+            mols=tuple(mols_lst),
+            indices=idx,
+            scores=scores,
+            features=features,
         )
 
     @cached_property
@@ -259,12 +263,13 @@ class ChemicalSpaceBaseLayer(ABC):
         return self._features
 
     @classmethod
-    def from_smi(cls: Type[T], path: str) -> T:
+    def from_smi(cls: Type[T], path: str, *args, **kwargs) -> T:
         """
         Create a ChemicalSpaceBaseLayer object from a file containing SMILES strings.
 
         Args:
             path (str): The path to the file containing SMILES strings.
+            kwargs (Any): Additional keyword arguments to pass to the constructor.
 
         Returns:
             ChemicalSpaceBaseLayer: A ChemicalSpaceBaseLayer object created from the SMILES strings.
@@ -283,16 +288,24 @@ class ChemicalSpaceBaseLayer(ABC):
             mols_lst.append(mol)
             indices_lst.append(str(mol.GetProp("_Name")))
 
-        return cls(mols=tuple(mols_lst), indices=tuple(indices_lst), scores=None)
+        return cls(
+            mols=tuple(mols_lst),
+            indices=tuple(indices_lst),
+            scores=None,
+            **kwargs,
+        )
 
     @classmethod
-    def from_sdf(cls: Type[T], path: str, scores_prop: Optional[str] = None) -> T:
+    def from_sdf(
+        cls: Type[T], path: str, scores_prop: Optional[str] = None, *args, **kwargs
+    ) -> T:
         """
         Create a ChemicalSpaceBaseLayer object from an SDF file.
 
         Args:
             path (str): The path to the SDF file.
             scores_prop (Optional[str]): The property name in the SDF file that contains the scores. Default is None.
+            kwargs (Any): Additional keyword arguments to pass to the constructor.
 
         Returns:
             ChemicalSpaceBaseLayer: The ChemicalSpaceBaseLayer object created from the SDF file.
@@ -322,7 +335,12 @@ class ChemicalSpaceBaseLayer(ABC):
                 scores=tuple(scores_lst),
             )
         else:
-            return cls(mols=tuple(mols_lst), indices=tuple(indices_lst), scores=None)
+            return cls(
+                mols=tuple(mols_lst),
+                indices=tuple(indices_lst),
+                scores=None,
+                **kwargs,
+            )
 
     def to_smi(self, path: str) -> None:
         """
@@ -432,7 +450,13 @@ class ChemicalSpaceBaseLayer(ABC):
         else:
             features = np.vstack([self._features, other._features])
 
-        return factory(self, mols=mols, indices=idx, scores=score, features=features)
+        return factory(
+            self,
+            mols=mols,
+            indices=idx,
+            scores=score,
+            features=features,
+        )
 
     def __sub__(self, other: T) -> T:
         """
@@ -484,7 +508,14 @@ class ChemicalSpaceBaseLayer(ABC):
         features = self._features[features_idx] if self._features is not None else None
 
         return factory(
-            self, mols=tuple(mols_lst), indices=idx, scores=scores, features=features
+            self,
+            mols=tuple(mols_lst),
+            indices=idx,
+            scores=scores,
+            features=features,
+            featurizer=self.featurizer,
+            metric=self.metric,
+            n_jobs=self.n_jobs,
         )
 
     def __getitem__(self, idx: int | SliceType) -> Tuple[
@@ -533,7 +564,7 @@ class ChemicalSpaceBaseLayer(ABC):
         """
         Create a copy of the object.
 
-        Parameters:
+        Args:
             deep (bool): If True, perform a deep copy of the object. If False, perform a shallow copy.
 
         Returns:
@@ -564,7 +595,11 @@ class ChemicalSpaceBaseLayer(ABC):
         )
         features = self._features.copy() if self._features is not None else None
         return factory(
-            self, mols=mols, indices=indices, scores=scores, features=features
+            self,
+            mols=mols,
+            indices=indices,
+            scores=scores,
+            features=features,
         )
 
     @staticmethod

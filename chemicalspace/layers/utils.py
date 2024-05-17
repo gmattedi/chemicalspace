@@ -1,5 +1,5 @@
 from functools import reduce
-from typing import Any, Callable, Iterable, List, TypeAlias, Sequence, Union
+from typing import Any, Callable, Iterable, List, TypeAlias, Sequence, Union, Tuple
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -114,20 +114,48 @@ def safe_smiles2mol(smiles_or_mol: MolOrSmiles) -> Mol:
     return smiles2mol(smiles_or_mol)
 
 
-def factory(cls, *args, **kwargs) -> Any:
+def factory(cls, **kwargs) -> Any:
     """
-    Create an instance of the given class with the provided arguments.
+    Create a new instance of the given class with the provided arguments.
+    Any missing arguments to the __init__ in kwargs will be filled with the class attributes.
 
     Args:
-        cls: The class to create an instance of.
-        *args: Positional arguments to pass to the class constructor.
+        cls: The class object to create a new instance of.
         **kwargs: Keyword arguments to pass to the class constructor.
 
     Returns:
         An instance of the given class.
 
     """
-    return type(cls)(*args, **kwargs)
+
+    init_arg_names = get_class_init_args(cls)
+
+    # Isolate init arguments that were not passed
+    missing_args = set(init_arg_names) - set(kwargs.keys())
+    # And pull them from the instance
+    missing_kwargs = {arg: getattr(cls, arg) for arg in missing_args}
+
+    # Combine the provided and missing arguments
+    kwargs = {**kwargs, **missing_kwargs}
+
+    obj = type(cls)(**kwargs)
+
+    return obj
+
+
+def get_class_init_args(obj: Any) -> Tuple[str]:
+    """
+    Get the argument names of the class __init__ method.
+
+    Args:
+        obj: The class instance.
+
+    Returns:
+        Tuple[str]: The argument names of the class __init__ method.
+
+    """
+
+    return obj.__init__.__code__.co_varnames[1 : obj.__init__.__code__.co_argcount]
 
 
 def parallel_map(
