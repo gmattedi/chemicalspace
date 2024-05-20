@@ -557,7 +557,7 @@ pip install -e .[dev]
 
 ## Hooks
 
-The project uses `pre-commit` for code formatting and linting.
+The project uses `pre-commit` for code formatting, linting and testing.
 Install the hooks with:
 
 ```bash

@@ -1,37 +1,38 @@
 fail_fast: true
 
 repos:
-  - repo: local
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
     hooks:
       - id: black
         name: black
-        entry: black
-        language: system
+        language_version: python3.11.9
         types_or:
           - python
           - pyi
           - jupyter
 
-  - repo: local
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
     hooks:
       - id: ruff
         name: ruff
-        entry: ruff
-        language: system
+        language_version: python3.11.9
         types_or:
           - python
           - pyi
-        args: [--fix]
+        args: [ --fix ]
 
-  - repo: local
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
     hooks:
       - id: mypy
         name: mypy
-        entry: mypy
-        language: system
+        language_version: python3.11.9
         types_or:
           - python
           - pyi
+        args: [ --ignore-missing-imports ]
 
   - repo: local
     hooks:
