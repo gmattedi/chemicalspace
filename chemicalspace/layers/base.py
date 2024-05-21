@@ -460,10 +460,10 @@ class ChemicalSpaceBaseLayer(ABC):
             score = np.concatenate([self.scores, other.scores])
 
         if (self._features is None) or (other._features is None):
-            if (self._features is None) != (other._features is None):
-                warnings.warn(
-                    "One or more spaces do not have features. Features will be None"
-                )
+            # if (self._features is None) != (other._features is None):
+            #     warnings.warn(
+            #         "One or more spaces do not have features. Features will be None"
+            #     )
             features = None
         else:
             features = np.vstack([self._features, other._features])

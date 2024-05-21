@@ -33,6 +33,17 @@ repos:
           - python
           - pyi
         args: [ --ignore-missing-imports ]
+      
+  - repo: local
+    hooks:
+      - id: pyright
+        name: pyright
+        entry: pyright
+        language: system
+        types_or:
+          - python
+          - pyi
+        pass_filenames: false
 
   - repo: local
     hooks:
