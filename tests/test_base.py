@@ -5,22 +5,22 @@ from typing import Generator
 
 import numpy as np
 import pytest
-from rdkit.Chem import Mol
+from rdkit.Chem.rdchem import Mol
 
 from chemicalspace.layers.base import ChemicalSpaceBaseLayer
 from chemicalspace.layers.utils import (
+    MolFeaturizerType,
     ecfp4_featurizer,
     maccs_featurizer,
-    MolFeaturizerType,
 )
 
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 INPUT_SMI_FILES = [
-    os.path.join(TESTS_DIR, "data", name) for name in ["inputs1.smi", "inputs2.smi"]
+    os.path.join(TESTS_DIR, "data", name) for name in ["inputs1.smi", "inputs2.smi.gz"]
 ]
 INPUT_SDF_FILES = [
-    os.path.join(TESTS_DIR, "data", name) for name in ["inputs1.sdf", "inputs2.sdf"]
+    os.path.join(TESTS_DIR, "data", name) for name in ["inputs1.sdf", "inputs2.sdf.gz"]
 ]
 
 
@@ -68,14 +68,34 @@ def test_classmethods(
     assert space.scores is None
 
 
-def test_save(space: ChemicalSpaceBaseLayer, tmp_path: Path) -> None:
-    space.to_sdf(str(tmp_path / "test.sdf"))
-    space_loaded = ChemicalSpaceBaseLayer.from_sdf(str(tmp_path / "test.sdf"))
+@pytest.mark.parametrize("gzipped", [False, True])
+def test_smi_io(space: ChemicalSpaceBaseLayer, tmp_path: Path, gzipped: bool) -> None:
+    if gzipped:
+        fname = "test.smi.gz"
+    else:
+        fname = "test.smi"
+
+    space.to_smi(str(tmp_path / fname))
+
+    assert (tmp_path / fname).exists()
+
+    space_loaded = ChemicalSpaceBaseLayer.from_smi(str(tmp_path / fname))
 
     assert space == space_loaded
 
-    space.to_smi(str(tmp_path / "test.smi"))
-    space_loaded = ChemicalSpaceBaseLayer.from_smi(str(tmp_path / "test.smi"))
+
+@pytest.mark.parametrize("gzipped", [False, True])
+def test_sdf_io(space: ChemicalSpaceBaseLayer, tmp_path: Path, gzipped: bool) -> None:
+    if gzipped:
+        fname = "test.sdf.gz"
+    else:
+        fname = "test.sdf"
+
+    space.to_sdf(str(tmp_path / fname))
+
+    assert (tmp_path / fname).exists()
+
+    space_loaded = ChemicalSpaceBaseLayer.from_sdf(str(tmp_path / fname))
 
     assert space == space_loaded
 

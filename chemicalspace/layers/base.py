@@ -8,20 +8,18 @@ from numpy.typing import NDArray
 from rdkit import Chem
 from rdkit.Chem import Mol  # type: ignore
 
+from chemicalspace.layers import utils
+
 from .utils import (
     IntOrNone,
     MaybeIndex,
     MaybeScore,
+    MolFeaturizerType,
     MolOrSmiles,
     Number,
     SliceType,
-    ecfp4_featurizer,
     factory,
-    hash_mol,
     parallel_map,
-    safe_smiles2mol,
-    smiles2mol,
-    MolFeaturizerType,
 )
 
 T = TypeVar("T", bound="ChemicalSpaceBaseLayer")
@@ -38,7 +36,7 @@ class ChemicalSpaceBaseLayer(ABC):
         mols: Tuple[MolOrSmiles, ...],
         indices: Optional[Tuple[Any, ...]] = None,
         scores: Optional[Tuple[Number, ...]] = None,
-        featurizer: MolFeaturizerType = ecfp4_featurizer,
+        featurizer: MolFeaturizerType = utils.ecfp4_featurizer,
         metric: str = "jaccard",
         features: Optional[NDArray[np.int_]] = None,
         hash_indices: bool = False,
@@ -61,7 +59,7 @@ class ChemicalSpaceBaseLayer(ABC):
             ValueError: If the number of indices does not match the number of molecules.
             ValueError: If the number of scores does not match the number of molecules.
         """
-        mols_m = tuple(parallel_map(safe_smiles2mol, mols, n_jobs=n_jobs))
+        mols_m = tuple(parallel_map(utils.safe_smiles2mol, mols, n_jobs=n_jobs))
         self.mols: Tuple[Mol, ...] = mols_m
         self.indices = indices
         self.scores = scores
@@ -96,7 +94,7 @@ class ChemicalSpaceBaseLayer(ABC):
         Returns:
             None
         """
-        mol_m = mol if isinstance(mol, Mol) else smiles2mol(mol)
+        mol_m = mol if isinstance(mol, Mol) else utils.smiles2mol(mol)
         self.mols += (mol_m,)
 
         if self.indices is not None:
@@ -108,7 +106,8 @@ class ChemicalSpaceBaseLayer(ABC):
                 self.scores += (score,)
 
         if self._features is not None:
-            self._features = np.vstack([self._features, self.featurizer(mol_m)])
+            feats = np.array(self.featurizer(mol_m)).reshape(1, -1)
+            self._features = np.r_[self._features, feats]
 
     def chunks(self, chunk_size: int) -> Generator[T, None, None]:  # type: ignore
         """
@@ -213,7 +212,7 @@ class ChemicalSpaceBaseLayer(ABC):
         scores_lst: List[Number] = []
         features_idx: List[int] = []
 
-        mols_hashes = parallel_map(hash_mol, self.mols, n_jobs=self.n_jobs)
+        mols_hashes = parallel_map(utils.hash_mol, self.mols, n_jobs=self.n_jobs)
 
         for i in range(len(self)):
             mol = self.mols[i]
@@ -240,7 +239,10 @@ class ChemicalSpaceBaseLayer(ABC):
             tuple(scores_lst) if self.scores is not None else None
         )
 
-        features = self._features[features_idx] if self._features is not None else None
+        if self._features is not None:
+            features = self._features[features_idx]
+        else:
+            features = None
 
         return factory(
             self,
@@ -266,19 +268,21 @@ class ChemicalSpaceBaseLayer(ABC):
         return self._features
 
     @classmethod
-    def from_smi(cls: Type[T], path: str, *args, **kwargs) -> T:
+    def from_smi(cls: Type[T], path: str, **kwargs) -> T:
         """
         Create a ChemicalSpaceBaseLayer object from a file containing SMILES strings.
 
         Args:
             path (str): The path to the file containing SMILES strings.
+                Can be gzipped
             kwargs (Any): Additional keyword arguments to pass to the constructor.
 
         Returns:
             ChemicalSpaceBaseLayer: A ChemicalSpaceBaseLayer object created from the SMILES strings.
 
         """
-        supplier = Chem.SmilesMolSupplier(path, titleLine=False)
+
+        supplier = utils.smi_supplier(path)
 
         mols_lst: List[Mol] = []
         indices_lst: List[str] = []
@@ -300,13 +304,13 @@ class ChemicalSpaceBaseLayer(ABC):
 
     @classmethod
     def from_sdf(
-        cls: Type[T], path: str, scores_prop: Optional[str] = None, *args, **kwargs
+        cls: Type[T], path: str, scores_prop: Optional[str] = None, **kwargs
     ) -> T:
         """
         Create a ChemicalSpaceBaseLayer object from an SDF file.
 
         Args:
-            path (str): The path to the SDF file.
+            path (str): The path to the SDF file. Can be gzipped.
             scores_prop (Optional[str]): The property name in the SDF file that contains the scores. Default is None.
             kwargs (Any): Additional keyword arguments to pass to the constructor.
 
@@ -314,7 +318,7 @@ class ChemicalSpaceBaseLayer(ABC):
             ChemicalSpaceBaseLayer: The ChemicalSpaceBaseLayer object created from the SDF file.
 
         """
-        supplier = Chem.SDMolSupplier(path)
+        supplier = utils.sdf_supplier(path)
 
         mols_lst: List[Mol] = []
         indices_lst: List[str] = []
@@ -350,7 +354,7 @@ class ChemicalSpaceBaseLayer(ABC):
         Write the molecules in the chemical space to a file as SMILES strings.
 
         Args:
-            path (str): The path to the output file.
+            path (str): The path to the output file. Can be gzipped
 
         Returns:
             None
@@ -360,17 +364,14 @@ class ChemicalSpaceBaseLayer(ABC):
         else:
             indices = list(self.indices)
 
-        with open(path, "w") as f:
-            for mol, idx in zip(self.mols, indices):
-                smi = Chem.MolToSmiles(mol)
-                f.write(f"{smi} {idx}\n")
+        utils.smi_writer(path, self.mols, indices)
 
     def to_sdf(self, path: str, scores_prop: Optional[str] = None) -> None:
         """
         Write the molecules in the chemical space to an SDF file.
 
         Args:
-            path (str): The path to the output file.
+            path (str): The path to the output file. Can be gzipped.
             scores_prop (Optional[str]): The property name to use for the scores. Default is None.
 
         Returns:
@@ -380,25 +381,20 @@ class ChemicalSpaceBaseLayer(ABC):
         if self.indices is None:
             indices = [""] * len(self)
         else:
-            indices = list(self.indices)
+            indices = list(map(str, self.indices))
 
-        if self.scores is None:
-            if scores_prop is None:
-                scores = [0.0] * len(self)
+        if scores_prop is not None:
+            if self.scores is None:
+                raise ValueError("Scores are not available")
             else:
-                raise ValueError("Scores must be provided to write to SDF")
+                for mol, idx, score in zip(self.mols, indices, self.scores):
+                    mol.SetProp("_Name", idx)
+                    mol.SetProp(scores_prop, str(score))
         else:
-            scores = list(self.scores)
+            for mol, idx in zip(self.mols, indices):
+                mol.SetProp("_Name", idx)
 
-        w = Chem.SDWriter(path)
-
-        for mol, idx, score in zip(self.mols, indices, scores):
-            mol.SetProp("_Name", idx)
-            if scores_prop is not None:
-                mol.SetProp(scores_prop, str(score))
-            w.write(mol)
-
-        w.close()  # type: ignore
+        utils.sdf_writer(path, self.mols)
 
     def __len__(self) -> int:
         """
@@ -478,14 +474,14 @@ class ChemicalSpaceBaseLayer(ABC):
         if not isinstance(other, type(self)):
             raise TypeError("Can only subtract ChemicalSpace objects")
 
-        cache = set(parallel_map(hash_mol, other.mols, n_jobs=self.n_jobs))
+        cache = set(parallel_map(utils.hash_mol, other.mols, n_jobs=self.n_jobs))
 
         mols_lst: List[Mol] = []
         indices_lst: List[Any] = []
         scores_lst: List[Number] = []
         features_idx: List[int] = []
 
-        mols_hashes = parallel_map(hash_mol, self.mols, n_jobs=self.n_jobs)
+        mols_hashes = parallel_map(utils.hash_mol, self.mols, n_jobs=self.n_jobs)
 
         for i in range(len(self)):
             mol = self.mols[i]
@@ -589,7 +585,7 @@ class ChemicalSpaceBaseLayer(ABC):
 
     def __deepcopy__(self, memo: Dict[int, Any]) -> T:  # type: ignore
         _ = memo
-        mols = tuple([Chem.Mol(mol) for mol in self.mols])
+        mols = tuple([Mol(mol) for mol in self.mols])
         indices = (
             tuple([idx for idx in self.indices]) if self.indices is not None else None
         )
@@ -619,7 +615,6 @@ class ChemicalSpaceBaseLayer(ABC):
         return Chem.MolToInchiKey(mol)
 
     def __hash__(self) -> int:
-
         inchi_keys: List[str] = parallel_map(
             self.hash_mol, self.mols, n_jobs=self.n_jobs
         )
