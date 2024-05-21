@@ -1,7 +1,18 @@
 import warnings
 from abc import ABC
 from functools import cached_property
-from typing import Any, Dict, Generator, List, Optional, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeAlias,
+    TypeVar,
+)
 
 import numpy as np
 from numpy.typing import NDArray
@@ -23,6 +34,7 @@ from .utils import (
 )
 
 T = TypeVar("T", bound="ChemicalSpaceBaseLayer")
+ScoreArray: TypeAlias = NDArray[np.int_] | NDArray[np.float_] | NDArray[np.bool_]
 
 
 class ChemicalSpaceBaseLayer(ABC):
@@ -33,12 +45,12 @@ class ChemicalSpaceBaseLayer(ABC):
 
     def __init__(
         self,
-        mols: Tuple[MolOrSmiles, ...],
-        indices: Optional[Tuple[Any, ...]] = None,
-        scores: Optional[Tuple[Number, ...]] = None,
+        mols: Sequence[MolOrSmiles],
+        indices: Optional[Sequence[Any]] = None,
+        scores: Optional[Sequence[Number]] = None,
         featurizer: MolFeaturizerType = utils.ecfp4_featurizer,
         metric: str = "jaccard",
-        features: Optional[NDArray[np.int_]] = None,
+        features: Optional[NDArray[Any]] = None,
         hash_indices: bool = False,
         n_jobs: int = 1,
     ) -> None:
@@ -46,23 +58,28 @@ class ChemicalSpaceBaseLayer(ABC):
         Initializes a ChemicalSpace object.
 
         Args:
-            mols (Tuple[MolOrSmiles, ...]): A tuple of molecules or SMILES strings.
-            indices (Optional[Tuple[Any, ...]], optional): A tuple of indices. Defaults to None.
-            scores (Optional[Tuple[Number, ...]], optional): A tuple of scores. Defaults to None.
-            featurizer (MolFeaturizerType, optional): The featurizer function to use. Defaults to `ecfp4_featurizer`.
-            metric (str, optional): Distance metric supported by `scikit-learn`. Defaults to "jaccard".
-            features (Optional[NDArray[np.int_]], optional): A numpy array of features. Defaults to None.
-            hash_indices (bool, optional): Whether include indices when hashing molecules. Defaults to False.
-            n_jobs (int, optional): The number of jobs to use for parallel processing. Defaults to 1.
+            mols (Sequence[Mol | str]): A sequence of RDKit Mol objects or SMILES strings.
+            indices (Optional[Sequence[Any]], optional): A sequence of indices for the molecules. Defaults to None.
+            scores (Optional[Sequence[Number]], optional): A sequence of scores for the molecules. Defaults to None.
+            featurizer (MolFeaturizerType, optional): The featurizer to use for the molecules. Defaults to utils.ecfp4_featurizer.
+            metric (str, optional): The sklearn/scipy metric to use for the featurizer. Defaults to "jaccard".
+            features (Optional[NDArray[Any]], optional): Precomputed features for the molecules. Defaults to None.
+            hash_indices (bool, optional): Whether to include indices in the hash. Defaults to False.
+            n_jobs (int, optional): The number of parallel jobs to run. Defaults to 1.
+
 
         Raises:
             ValueError: If the number of indices does not match the number of molecules.
             ValueError: If the number of scores does not match the number of molecules.
         """
-        mols_m = tuple(parallel_map(utils.safe_smiles2mol, mols, n_jobs=n_jobs))
-        self.mols: Tuple[Mol, ...] = mols_m
-        self.indices = indices
-        self.scores = scores
+        mols_m = np.array((parallel_map(utils.safe_smiles2mol, mols, n_jobs=n_jobs)))
+        self.mols: NDArray[Mol] = mols_m
+        self.indices: NDArray[Any] | None = (
+            np.array(indices) if indices is not None else None
+        )
+        self.scores: ScoreArray | None = (
+            np.array(scores) if scores is not None else None
+        )
         self.n_jobs = n_jobs
         self.featurizer = featurizer
         self.metric = metric
@@ -72,8 +89,10 @@ class ChemicalSpaceBaseLayer(ABC):
             raise ValueError("Number of indices must match number of molecules")
         if self.scores is not None and len(self.scores) != len(self.mols):
             raise ValueError("Number of scores must match number of molecules")
+        if (features is not None) and (len(features) != len(self.mols)):
+            raise ValueError("Number of features must match number of molecules")
 
-        self._features: Union[NDArray[np.int_], None] = features
+        self._features: NDArray[Any] | None = features
 
         self.name = self.__class__.__name__
 
@@ -95,15 +114,19 @@ class ChemicalSpaceBaseLayer(ABC):
             None
         """
         mol_m = mol if isinstance(mol, Mol) else utils.smiles2mol(mol)
-        self.mols += (mol_m,)
+        self.mols = np.append(self.mols, mol_m)
 
         if self.indices is not None:
-            self.indices += (idx,)
+            if idx is None:
+                raise ValueError("Indices must be provided for all molecules")
+            else:
+                self.indices = np.append(self.indices, idx)
+
         if self.scores is not None:
             if score is None:
                 raise ValueError("Scores must be provided for all molecules")
             else:
-                self.scores += (score,)
+                self.scores = np.append(self.scores, score)
 
         if self._features is not None:
             feats = np.array(self.featurizer(mol_m)).reshape(1, -1)
@@ -163,7 +186,7 @@ class ChemicalSpaceBaseLayer(ABC):
             features=self._features[s] if self._features is not None else None,
         )
 
-    def mask(self, mask: Union[NDArray[np.bool_], List[bool]]) -> T:  # type: ignore
+    def mask(self, mask: NDArray[np.bool_] | List[bool]) -> T:  # type: ignore
         """
         Applies a boolean mask to the ChemicalSpaceBaseLayer object.
 
@@ -191,9 +214,9 @@ class ChemicalSpaceBaseLayer(ABC):
 
         return factory(
             self,
-            mols=tuple(mols),
-            indices=tuple(indices) if indices is not None else None,
-            scores=tuple(scores) if scores is not None else None,
+            mols=mols,
+            indices=indices if indices is not None else None,
+            scores=scores if scores is not None else None,
             features=features,
         )
 
@@ -232,12 +255,8 @@ class ChemicalSpaceBaseLayer(ABC):
                 if self._features is not None:
                     features_idx.append(i)
 
-        idx: Optional[Tuple[Any, ...]] = (
-            tuple(idx_lst) if self.indices is not None else None
-        )
-        scores: Optional[Tuple[Number, ...]] = (
-            tuple(scores_lst) if self.scores is not None else None
-        )
+        idx: List[Any] | None = idx_lst if self.indices is not None else None
+        scores: List[Number] | None = scores_lst if self.scores is not None else None
 
         if self._features is not None:
             features = self._features[features_idx]
@@ -246,7 +265,7 @@ class ChemicalSpaceBaseLayer(ABC):
 
         return factory(
             self,
-            mols=tuple(mols_lst),
+            mols=mols_lst,
             indices=idx,
             scores=scores,
             features=features,
@@ -296,8 +315,8 @@ class ChemicalSpaceBaseLayer(ABC):
             indices_lst.append(str(mol.GetProp("_Name")))
 
         return cls(
-            mols=tuple(mols_lst),
-            indices=tuple(indices_lst),
+            mols=mols_lst,
+            indices=indices_lst,
             scores=None,
             **kwargs,
         )
@@ -337,14 +356,14 @@ class ChemicalSpaceBaseLayer(ABC):
 
         if scores_prop is not None:
             return cls(
-                mols=tuple(mols_lst),
-                indices=tuple(indices_lst),
-                scores=tuple(scores_lst),
+                mols=mols_lst,
+                indices=indices_lst,
+                scores=scores_lst,
             )
         else:
             return cls(
-                mols=tuple(mols_lst),
-                indices=tuple(indices_lst),
+                mols=mols_lst,
+                indices=indices_lst,
                 scores=None,
                 **kwargs,
             )
@@ -421,7 +440,7 @@ class ChemicalSpaceBaseLayer(ABC):
         if not isinstance(other, type(self)):
             raise TypeError(f"Can only add {self.name} objects")
 
-        mols = self.mols + other.mols
+        mols = np.concatenate([self.mols, other.mols])
         if (self.indices is None) or (other.indices is None):
             if (self.indices is None) != (other.indices is None):
                 warnings.warn(
@@ -429,7 +448,7 @@ class ChemicalSpaceBaseLayer(ABC):
                 )
             idx = None
         else:
-            idx = self.indices + other.indices
+            idx = np.concatenate([self.indices, other.indices])
 
         if (self.scores is None) or (other.scores is None):
             if (self.scores is None) != (other.scores is None):
@@ -438,7 +457,7 @@ class ChemicalSpaceBaseLayer(ABC):
                 )
             score = None
         else:
-            score = self.scores + other.scores
+            score = np.concatenate([self.scores, other.scores])
 
         if (self._features is None) or (other._features is None):
             if (self._features is None) != (other._features is None):
@@ -498,17 +517,13 @@ class ChemicalSpaceBaseLayer(ABC):
                 if self._features is not None:
                     features_idx.append(i)
 
-        idx: Optional[Tuple[Any, ...]] = (
-            tuple(indices_lst) if self.indices is not None else None
-        )
-        scores: Optional[Tuple[Number, ...]] = (
-            tuple(scores_lst) if self.scores is not None else None
-        )
+        idx: List[Any] | None = indices_lst if self.indices is not None else None
+        scores: List[Number] | None = scores_lst if self.scores is not None else None
         features = self._features[features_idx] if self._features is not None else None
 
         return factory(
             self,
-            mols=tuple(mols_lst),
+            mols=mols_lst,
             indices=idx,
             scores=scores,
             features=features,
@@ -517,11 +532,9 @@ class ChemicalSpaceBaseLayer(ABC):
             n_jobs=self.n_jobs,
         )
 
-    def __getitem__(self, idx: int | SliceType) -> Tuple[
-        Mol | Tuple[Mol, ...],
-        MaybeIndex | Tuple[MaybeIndex, ...],
-        MaybeScore | Tuple[MaybeScore, ...],
-    ]:
+    def __getitem__(
+        self, idx: int | SliceType
+    ) -> Tuple[NDArray[Mol], NDArray[Any] | None, ScoreArray | None]:
         """
         Retrieve the item(s) at the specified index or slice.
 
@@ -529,11 +542,7 @@ class ChemicalSpaceBaseLayer(ABC):
             idx (int | SliceType): The index or slice to retrieve the item(s) from.
 
         Returns:
-            Tuple[
-                Mol | Tuple[Mol, ...],
-                MaybeIndex | Tuple[MaybeIndex, ...],
-                MaybeScore | Tuple[MaybeScore, ...],
-            ]: A tuple containing the molecule(s), index(es), and score(s) at the specified index or slice.
+            Tuple[NDArray[Mol], NDArray[Any] | None, ScoreArray | None]: A tuple containing the molecules, indices, and scores.
         """
         mol = self.mols[idx]
         mol_idx = self.indices[idx] if self.indices is not None else None
@@ -585,13 +594,9 @@ class ChemicalSpaceBaseLayer(ABC):
 
     def __deepcopy__(self, memo: Dict[int, Any]) -> T:  # type: ignore
         _ = memo
-        mols = tuple([Mol(mol) for mol in self.mols])
-        indices = (
-            tuple([idx for idx in self.indices]) if self.indices is not None else None
-        )
-        scores = (
-            tuple([score for score in self.scores]) if self.scores is not None else None
-        )
+        mols = [Mol(mol) for mol in self.mols]
+        indices = [idx for idx in self.indices] if self.indices is not None else None
+        scores = [score for score in self.scores] if self.scores is not None else None
         features = self._features.copy() if self._features is not None else None
         return factory(
             self,

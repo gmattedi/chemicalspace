@@ -58,7 +58,7 @@ def test_classmethods(
     assert len(space) == 10
 
     assert len(space.mols) == 10
-    assert isinstance(space.mols, tuple)
+    assert isinstance(space.mols, np.ndarray)
     assert isinstance(space.mols[0], Mol)
 
     assert space.indices is not None
@@ -133,7 +133,7 @@ def test_slicing(space: ChemicalSpaceBaseLayer) -> None:
     assert len(entries) == 3
     assert len(entries[0]) == len(entries[1]) == 2  # type: ignore
     assert entries[2] is None
-    assert isinstance(entries[0], tuple)
+    assert isinstance(entries[0], np.ndarray)
     assert isinstance(entries[0][0], Mol)
     assert isinstance(entries[1][0], str)  # type: ignore
 

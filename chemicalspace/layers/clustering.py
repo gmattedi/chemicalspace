@@ -1,5 +1,5 @@
 import warnings
-from functools import partial
+from functools import lru_cache, partial
 from typing import Any, Generator, List, Literal, Optional, Tuple, TypeAlias
 
 import numpy as np
@@ -74,6 +74,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         Inherits attributes from ChemicalSpaceBaseLayer.
     """
 
+    @lru_cache
     def cluster(
         self,
         n_clusters: CLUSTER_NUMBER = None,
