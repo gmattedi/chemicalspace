@@ -68,9 +68,10 @@ print(space)
 
 ### Indexing, Slicing and Masking
 
+Indexing, slicing and masking a `ChemicalSpace` object returns a new `ChemicalSpace` object.
+
 #### Indexing
 
-Single indexing and builtin slicing returns a tuple of the molecule(s), index(es) and score(s).
 
 ```python
 from chemicalspace import ChemicalSpace
@@ -81,8 +82,23 @@ print(space[0])
 ```
 
 ```text
-(<rdkit.Chem.rdchem.Mol object at 0x76dd0ded8900>, 'CHEMBL2205617', None)
+<ChemicalSpace: 1 molecules | 1 indices | No scores>
 ```
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+idx = [1, 2, 4]
+
+print(space[idx])
+```
+
+```text
+<ChemicalSpace: 3 molecules | 3 indices | No scores>
+```
+
+#### Slicing
 
 ```python
 from chemicalspace import ChemicalSpace
@@ -93,43 +109,18 @@ print(space[:2])
 ```
 
 ```text
-(
-  (<rdkit.Chem.rdchem.Mol object at 0x76dd0ded8dd0>,
-   <rdkit.Chem.rdchem.Mol object at 0x76dd0ded8e40>),
-  ('CHEMBL2205617', 'CHEMBL3322349'),
-  None
-)
-```
-
-#### Slicing
-
-Slicing with `.slice` returns a new `ChemicalSpace` object.
-
-```python
-from chemicalspace import ChemicalSpace
-
-space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
-space_sliced = space.slice(start=0, stop=6, step=2)
-
-print(space_sliced)
-```
-
-```text
-<ChemicalSpace: 3 molecules | 3 indices | No scores>
+<ChemicalSpace: 2 molecules | 2 indices | No scores>
 ```
 
 #### Masking
-
-Masking with `.mask` returns a new `ChemicalSpace` object.
 
 ```python
 from chemicalspace import ChemicalSpace
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
 mask = [True, False, True, False, True, False, True, False, True, False]
-space_masked = space.mask(mask)
 
-print(space_masked)
+print(space[mask])
 ```
 
 ```text
@@ -191,7 +182,7 @@ inherit the respective features.
 from chemicalspace import ChemicalSpace
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
-space_slice = space.slice(start=0, stop=6, step=2)
+space_slice = space[0:6:2]
 
 # Custom ECFP4 features
 print(space.features.shape)
@@ -211,7 +202,7 @@ from chemicalspace import ChemicalSpace
 from chemicalspace.layers.utils import maccs_featurizer
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi", featurizer=maccs_featurizer)
-space_slice = space.slice(start=0, stop=6, step=2)
+space_slice = space[0:6:2]
 
 # Custom ECFP4 features
 print(space.features.shape)

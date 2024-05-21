@@ -23,7 +23,7 @@ def test_attributes(space):
     assert space._features is None
 
     # Base
-    assert hasattr(space, "mask")
+    assert hasattr(space, "chunks")
     # Clustering
     assert hasattr(space, "cluster")
     # Neighbors
