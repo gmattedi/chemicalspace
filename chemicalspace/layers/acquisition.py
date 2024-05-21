@@ -234,4 +234,4 @@ class ChemicalSpaceAcquisitionLayer(ChemicalSpaceBaseLayer):
         mask = np.zeros(len(self.features), dtype=bool)
         mask[pick_idx] = True
 
-        return self.mask(mask)
+        return self[mask]

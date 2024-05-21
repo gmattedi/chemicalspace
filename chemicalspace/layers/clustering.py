@@ -154,7 +154,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
 
         for i in range(n):
             mask = np.array(labels == i)
-            yield self.mask(mask)
+            yield self[mask]
 
     def ksplits(
         self,

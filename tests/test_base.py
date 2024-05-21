@@ -118,26 +118,27 @@ def test_features(space: ChemicalSpaceBaseLayer, featurizer: MolFeaturizerType) 
     assert space._features is not None
 
 
-def test_slicing(space: ChemicalSpaceBaseLayer) -> None:
+def test_slice_mask_chunk(space: ChemicalSpaceBaseLayer) -> None:
     # Compute the features
     _ = space.features
 
-    entry = space[0]
-    assert isinstance(entry, tuple)
-    assert isinstance(entry[0], Mol)
-    assert isinstance(entry[1], str)
-    assert entry[2] is None
+    entry: ChemicalSpaceBaseLayer = space[0]
+    assert isinstance(entry, type(space))
+    assert isinstance(entry.mols[0], Mol)
+    if entry.indices is not None:
+        assert isinstance(entry.indices[0], str)
+    assert entry.scores is None
 
-    entries = space[:2]
+    entries: ChemicalSpaceBaseLayer = space[:3]
 
+    assert isinstance(entries, type(space))
     assert len(entries) == 3
-    assert len(entries[0]) == len(entries[1]) == 2  # type: ignore
-    assert entries[2] is None
-    assert isinstance(entries[0], np.ndarray)
-    assert isinstance(entries[0][0], Mol)
-    assert isinstance(entries[1][0], str)  # type: ignore
+    assert entries.scores is None
+    assert isinstance(entries.mols, np.ndarray)
+    assert isinstance(entries.mols[0], Mol)
+    assert isinstance(entries.indices[0], str)  # type: ignore
 
-    space_slice: ChemicalSpaceBaseLayer = space.slice(start=0, stop=10, step=2)
+    space_slice: ChemicalSpaceBaseLayer = space[0:10:2]
 
     assert isinstance(space_slice, ChemicalSpaceBaseLayer)
     assert len(space_slice) == 5
@@ -145,7 +146,7 @@ def test_slicing(space: ChemicalSpaceBaseLayer) -> None:
     assert np.allclose(space_slice._features, space._features[::2])  # type: ignore
 
     mask = [True, False] * 5
-    space_mask: ChemicalSpaceBaseLayer = space.mask(mask=mask)
+    space_mask: ChemicalSpaceBaseLayer = space[mask]
 
     assert isinstance(space_mask, ChemicalSpaceBaseLayer)
     assert len(space_mask) == 5
@@ -162,7 +163,7 @@ def test_slicing(space: ChemicalSpaceBaseLayer) -> None:
     assert isinstance(space_chunks, GeneratorType)
     assert len(space_chunks_lst) == 4
     assert space_chunks_lst_sizes == [3, 3, 3, 1]
-    assert space_chunks_lst[0] == space.slice(start=0, stop=3)
+    assert space_chunks_lst[0] == space[0:3]
     assert np.allclose(space_chunks_lst[0]._features, space._features[:3])  # type: ignore
     assert np.allclose(space_chunks_lst[-1]._features, space._features[-1:])  # type: ignore
 
@@ -181,10 +182,10 @@ def test_attribute_inheritance(space: ChemicalSpaceBaseLayer) -> None:
         new_parameter=42, mols=space.mols, indices=space.indices
     )
 
-    derived_space_slice: DerivedSpace = derived_space.slice(0, 5)
+    derived_space_slice: DerivedSpace = derived_space[:5]
     assert derived_space_slice.new_parameter == 42
 
-    derived_space_mask: DerivedSpace = derived_space.mask([True, False] * 5)
+    derived_space_mask: DerivedSpace = derived_space[[True, False] * 5]
     assert derived_space_mask.new_parameter == 42
 
     derived_space_chunks: Generator[DerivedSpace, None, None] = derived_space.chunks(3)
@@ -257,8 +258,8 @@ def test_dual_operations(
     combined_spaces = space + other_space
 
     assert len(combined_spaces) == 10 + 15
-    assert combined_spaces.slice(0, 10) == space
-    assert combined_spaces.slice(10, None) == other_space
+    assert combined_spaces[0:10] == space
+    assert combined_spaces[10:] == other_space
     assert combined_spaces._features is not None
     assert np.allclose(combined_spaces._features, np.vstack([space._features, other_space._features]))  # type: ignore
 

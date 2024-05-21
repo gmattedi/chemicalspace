@@ -8,7 +8,6 @@ from typing import (
     List,
     Optional,
     Sequence,
-    Tuple,
     Type,
     TypeAlias,
     TypeVar,
@@ -22,7 +21,6 @@ from rdkit.Chem import Mol  # type: ignore
 from chemicalspace.layers import utils
 
 from .utils import (
-    IntOrNone,
     MaybeIndex,
     MaybeScore,
     MolFeaturizerType,
@@ -143,82 +141,7 @@ class ChemicalSpaceBaseLayer(ABC):
             Generator[ChemicalSpaceBaseLayer, None, None]: A generator of ChemicalSpaceBaseLayer objects.
         """
         for i in range(0, len(self), chunk_size):
-            yield factory(
-                self,
-                mols=self.mols[i : i + chunk_size],
-                indices=(
-                    self.indices[i : i + chunk_size]
-                    if self.indices is not None
-                    else None
-                ),
-                scores=(
-                    self.scores[i : i + chunk_size] if self.scores is not None else None
-                ),
-                features=(
-                    self._features[i : i + chunk_size]
-                    if self._features is not None
-                    else None
-                ),
-            )
-
-    def slice(
-        self, start: IntOrNone, stop: IntOrNone, step: IntOrNone = None
-    ) -> T:  # type: ignore
-        """
-        Slice the ChemicalSpaceBaseLayer object based on the given start, stop, and step Args.
-
-        Args:
-            start (int or None): The start index of the slice.
-            stop (int or None): The stop index of the slice.
-            step (int or None): The step size of the slice.
-
-        Returns:
-            ChemicalSpaceBaseLayer: A new ChemicalSpaceBaseLayer object containing the sliced data.
-
-        """
-        s = slice(start, stop, step)
-
-        return factory(
-            self,
-            mols=self.mols[s],
-            indices=self.indices[s] if self.indices is not None else None,
-            scores=self.scores[s] if self.scores is not None else None,
-            features=self._features[s] if self._features is not None else None,
-        )
-
-    def mask(self, mask: NDArray[np.bool_] | List[bool]) -> T:  # type: ignore
-        """
-        Applies a boolean mask to the ChemicalSpaceBaseLayer object.
-
-        Args:
-            mask: A boolean mask indicating which elements to keep.
-
-        Returns:
-            A new ChemicalSpaceBaseLayer object with the masked elements.
-
-        """
-        mask_arr = np.array(mask, dtype=bool)
-
-        mols = [mol for mol, mask in zip(self.mols, mask_arr) if mask]
-        indices = (
-            [idx for idx, mask in zip(self.indices, mask_arr) if mask]
-            if self.indices is not None
-            else None
-        )
-        scores = (
-            [score for score, mask in zip(self.scores, mask_arr) if mask]
-            if self.scores is not None
-            else None
-        )
-        features = self._features[mask_arr] if self._features is not None else None
-
-        return factory(
-            self,
-            mols=mols,
-            indices=indices if indices is not None else None,
-            scores=scores if scores is not None else None,
-            features=features,
-        )
+            yield self[i : i + chunk_size]
 
     def deduplicate(self) -> T:  # type: ignore
         """
@@ -533,22 +456,33 @@ class ChemicalSpaceBaseLayer(ABC):
         )
 
     def __getitem__(
-        self, idx: int | SliceType
-    ) -> Tuple[NDArray[Mol], NDArray[Any] | None, ScoreArray | None]:
+        self, idx: int | SliceType | NDArray[np.bool_] | List[bool] | List[int]
+    ) -> T:  # type: ignore
         """
         Retrieve the item(s) at the specified index or slice.
 
         Args:
-            idx (int | SliceType): The index or slice to retrieve the item(s) from.
+            idx: The index, slice, mask, or list of indices to retrieve.
 
         Returns:
-            Tuple[NDArray[Mol], NDArray[Any] | None, ScoreArray | None]: A tuple containing the molecules, indices, and scores.
+            ChemicalSpaceBaseLayer: A new ChemicalSpaceBaseLayer object containing the item(s) at the specified index or slice.
         """
+
+        if isinstance(idx, int):
+            idx = [idx]  # type: ignore
+
         mol = self.mols[idx]
         mol_idx = self.indices[idx] if self.indices is not None else None
         score = self.scores[idx] if self.scores is not None else None
+        features = self._features[idx] if self._features is not None else None
 
-        return mol, mol_idx, score
+        return factory(
+            self,
+            mols=mol,
+            indices=mol_idx,
+            scores=score,
+            features=features,
+        )
 
     def __eq__(self, other: object) -> bool:
         """

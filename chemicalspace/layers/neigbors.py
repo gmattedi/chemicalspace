@@ -98,4 +98,4 @@ class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
         idx = self.find_overlap(other, radius, min_neighbors=min_neighbors)
         mask = np.ones(len(self.features), dtype=bool)
         mask[idx] = False
-        return self.mask(mask)
+        return self[mask]
