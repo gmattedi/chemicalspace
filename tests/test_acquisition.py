@@ -3,11 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from chemicalspace.layers.acquisition import (
-    ChemicalSpaceAcquisitionLayer,
-    strategies_dict,
-    STRATEGIES,
-)
+from chemicalspace.layers.acquisition import STRATEGIES, ChemicalSpaceAcquisitionLayer
 
 np.random.seed(42)
 
@@ -23,9 +19,21 @@ def space() -> ChemicalSpaceAcquisitionLayer:
     return cs
 
 
-@pytest.mark.parametrize("strategy", tuple(strategies_dict.keys()))
+@pytest.mark.parametrize("strategy", ["random", "maxmin"])
 @pytest.mark.parametrize("n", (1, 5, 10))
-def test_pick(
+def test_pick_noscores(
+    space: ChemicalSpaceAcquisitionLayer, strategy: STRATEGIES, n: int
+) -> None:
+    space_picked: ChemicalSpaceAcquisitionLayer = space.pick(n=n, strategy=strategy)
+
+    assert isinstance(space_picked, ChemicalSpaceAcquisitionLayer)
+    assert len(space_picked) == n
+    assert len(space - space_picked) == len(space) - n
+
+
+@pytest.mark.parametrize("strategy", ["greedy"])
+@pytest.mark.parametrize("n", (1, 5, 10))
+def test_pick_scores(
     space: ChemicalSpaceAcquisitionLayer, strategy: STRATEGIES, n: int
 ) -> None:
     space_picked: ChemicalSpaceAcquisitionLayer = space.pick(n=n, strategy=strategy)
