@@ -15,7 +15,6 @@ function coverage_color() {
         }
     }'
 }
-
 color=$(coverage_color "${total}")
 
 curl -s https://img.shields.io/badge/coverage-"${total}"%25-"${color}" >"${root}"/.badges/coverage.svg
