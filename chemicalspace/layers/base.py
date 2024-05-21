@@ -73,7 +73,7 @@ class ChemicalSpaceBaseLayer(ABC):
             ValueError: If the number of scores does not match the number of molecules.
         """
         mols_m = np.array((parallel_map(utils.safe_smiles2mol, mols, n_jobs=n_jobs)))
-        self.mols: NDArray[Mol] = mols_m
+        self.mols: NDArray[Mol] = np.array(mols_m)
         self.indices: NDArray[Any] | None = (
             np.array(indices) if indices is not None else None
         )
