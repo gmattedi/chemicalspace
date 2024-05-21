@@ -49,10 +49,19 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: pytest tests/
+        entry: coverage run -m pytest tests/
         language: system
         types_or:
           - python
           - pyi
+        pass_filenames: false
+        always_run: true
+
+  - repo: local
+    hooks:
+      - id: badges
+        name: badges
+        entry: .badges/update-badges.sh
+        language: system
         pass_filenames: false
         always_run: true

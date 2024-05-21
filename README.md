@@ -1,3 +1,6 @@
+![coverage](.badges/coverage.svg)&nbsp;&nbsp; 
+![tests](.badges/tests.svg)
+
 # ChemicalSpace
 
 An Object-Oriented Representation for Chemical Spaces
@@ -601,4 +604,3 @@ Install the hooks with:
 
 ```bash
 pre-commit install
-```
