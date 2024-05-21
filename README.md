@@ -185,7 +185,7 @@ inherit the respective features.
 from chemicalspace import ChemicalSpace
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
-space_slice = space[0:6:2]
+space_slice = space[:6:2]
 
 # Custom ECFP4 features
 print(space.features.shape)
@@ -197,7 +197,9 @@ print(space_slice.features.shape)
 (3, 1024)
 ```
 
-Using a custom featurizing function. This should take in a `rdkit.Chem.Mol` molecule, and the numerical
+#### Custom featurizer
+
+This should take in a `rdkit.Chem.Mol` molecule, and the numerical
 return value should be castable to NumPy array (see `chemicalspace.utils.MolFeaturizerType`).
 
 ```python
@@ -205,7 +207,7 @@ from chemicalspace import ChemicalSpace
 from chemicalspace.layers.utils import maccs_featurizer
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi", featurizer=maccs_featurizer)
-space_slice = space[0:6:2]
+space_slice = space[:6:2]
 
 # Custom ECFP4 features
 print(space.features.shape)
