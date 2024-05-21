@@ -239,17 +239,8 @@ space = ChemicalSpace.from_smi("tests/data/inputs1.smi", metric='euclidean')
 
 #### Single entries
 
-Single
-entries as SMILES
-strings or `RDKit`
-molecules
-can
-be
-added
-to
-a
-`ChemicalSpace`
-object.
+Single entries as SMILES strings or `RDKit` molecules
+can be added to a `ChemicalSpace` object.
 
 ```python
 from chemicalspace import ChemicalSpace
@@ -351,7 +342,7 @@ from chemicalspace import ChemicalSpace
 
 space1 = ChemicalSpace.from_smi("tests/data/inputs1.smi")
 space1_again = ChemicalSpace.from_smi("tests/data/inputs1.smi")
-space2 = ChemicalSpace.from_smi("tests/data/inputs2.smi")
+space2 = ChemicalSpace.from_smi("tests/data/inputs2.smi.gz")
 
 print(space1 == space1)
 print(space1 == space1_again)
@@ -458,7 +449,7 @@ ECFP4/Morgan2 fingerprints.
 from chemicalspace import ChemicalSpace
 
 space1 = ChemicalSpace.from_smi("tests/data/inputs1.smi")
-space2 = ChemicalSpace.from_smi("tests/data/inputs2.smi")
+space2 = ChemicalSpace.from_smi("tests/data/inputs2.smi.gz")
 
 # Indices of `space1` that are similar to `space2`
 overlap = space1.find_overlap(space2, radius=0.6)
@@ -479,7 +470,7 @@ so to ensure that the two spaces are disjoint for a given similarity radius.
 from chemicalspace import ChemicalSpace
 
 space1 = ChemicalSpace.from_smi("tests/data/inputs1.smi")
-space2 = ChemicalSpace.from_smi("tests/data/inputs2.smi")
+space2 = ChemicalSpace.from_smi("tests/data/inputs2.smi.gz")
 
 # Carve out the overlap from `space1`
 space1_carved = space1.carve(space2, radius=0.6)
@@ -516,13 +507,17 @@ See [`chemicalspace.layers.acquisition`](chemicalspace/layers/acquisition.py) fo
 
 ```python
 from chemicalspace import ChemicalSpace
+import numpy as np
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
 
 space_pick_random = space.pick(n=3, strategy='random')
 print(space_pick_random)
 
-space.scores = tuple(range(len(space)))  # Assign dummy scores
+space_pick_diverse = space.pick(n=3, strategy='maxmin')
+print(space_pick_diverse)
+
+space.scores = np.array(range(len(space)))  # Assign dummy scores
 space_pick_greedy = space.pick(n=3, strategy='greedy')
 print(space_pick_greedy)
 ```

@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
+from rdkit.Chem import Mol  # type: ignore
 from sklearn.neighbors import BallTree
 
 from .base import ChemicalSpaceBaseLayer, T
@@ -43,6 +44,24 @@ def _find_overlap(
 
 
 class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
+    def find_neighbors(
+        self, mol: Mol, radius: float = 0.6, min_neighbors: int = 1  # type: ignore
+    ):
+        """
+        Find the indices of points in `self` that have at least `min_neighbors` neighbors
+        within a given `radius` similarity threshold to a given molecule.
+
+        Args:
+            mol (Mol): The molecule to find neighbors for.
+            radius (float, optional): The radius within which to search for neighbors. Defaults to 0.6.
+            min_neighbors (int, optional): The minimum number of neighbors required for a point
+
+        Returns:
+            NDArray[np.int_]: The indices of points in `self` that have at least `min_neighbors` neighbors.
+
+        """
+        other = ChemicalSpaceBaseLayer(mols=(mol,))
+        return _find_overlap(other, self, radius, min_neighbors, metric=self.metric)
 
     def find_overlap(
         self, other: T, radius: float = 0.6, min_neighbors: int = 1  # type: ignore
@@ -57,10 +76,10 @@ class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
             min_neighbors (int, optional): The minimum number of neighbors required for a point in `other`
 
         Returns:
-            NDArray[np.int_]: The indices of points in `other` that have at least `min_neighbors` neighbors in `self`.
+            NDArray[np.int_]: The indices of points in `self` that have at least `min_neighbors` neighbors in `other`.
 
         """
-        return _find_overlap(other, self, 1 - radius, min_neighbors, metric=self.metric)
+        return _find_overlap(other, self, radius, min_neighbors, metric=self.metric)
 
     def carve(self, other: T, radius: float = 0.6, min_neighbors: int = 1) -> T:  # type: ignore
         """
@@ -76,7 +95,7 @@ class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
             T: A new chemical space layer with points removed.
 
         """
-        idx = self.find_overlap(other, 1 - radius, min_neighbors=min_neighbors)
+        idx = self.find_overlap(other, radius, min_neighbors=min_neighbors)
         mask = np.ones(len(self.features), dtype=bool)
         mask[idx] = False
         return self.mask(mask)

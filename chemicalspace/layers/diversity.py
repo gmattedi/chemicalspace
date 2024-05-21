@@ -45,7 +45,7 @@ def internal_distance(
     for chunk in pairwise_distances_chunked(
         X, metric=metric, n_jobs=n_jobs, working_memory=working_memory
     ):
-        total += chunk.sum()
+        total += chunk.sum()  # type: ignore
 
     return total / n
 

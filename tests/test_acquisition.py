@@ -15,7 +15,7 @@ INPUT_SMI_FILE = os.path.join(TESTS_DIR, "data", "inputs1.smi")
 @pytest.fixture
 def space() -> ChemicalSpaceAcquisitionLayer:
     cs = ChemicalSpaceAcquisitionLayer.from_smi(INPUT_SMI_FILE)
-    cs.scores = tuple(range(len(cs)))  # assign scores
+    cs.scores = np.array(range(len(cs)), dtype=int)  # assign scores
     return cs
 
 

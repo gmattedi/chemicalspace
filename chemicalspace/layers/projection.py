@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Literal, TypeAlias
 
 import numpy as np
@@ -71,6 +72,7 @@ class ChemicalSpaceProjectionLayer(ChemicalSpaceBaseLayer):
     A layer for projecting chemical space data to a lower-dimensional space.
     """
 
+    @lru_cache
     def project(
         self,
         n_components: int = 2,
