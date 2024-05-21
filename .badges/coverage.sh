@@ -2,7 +2,7 @@
 set -e
 
 root=$(git rev-parse --show-toplevel)
-total=$(coverage report --format=total --data-file="${root}"/.coverage)
+total=$(coverage report --format=total --skip-empty --data-file="${root}"/.coverage)
 
 function coverage_color() {
     echo $1 | awk '{
