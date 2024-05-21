@@ -1,5 +1,16 @@
 from functools import reduce
-from typing import Any, Callable, Iterable, List, TypeAlias, Sequence, Union, Tuple
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeAlias,
+    Union,
+)
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -54,14 +65,14 @@ def ecfp4_featurizer(mol: Mol, radius: int = 2, n_bits: int = 1024) -> List[int]
     Calculates the ECFP4 fingerprint for a given molecule.
 
     Args:
-        mol (rdkit.Chem.rdchem.Mol): The molecule to calculate the fingerprint for.
+        mol (rdkit.Chem.Mol): The molecule to calculate the fingerprint for.
         radius (int, optional): The radius of the fingerprint. Defaults to 2.
         n_bits (int, optional): The number of bits in the fingerprint. Defaults to 1024.
 
     Returns:
         List[int]: The ECFP4 fingerprint as a list of integers.
     """
-    return AllChem.GetMorganFingerprintAsBitVect(
+    return AllChem.GetMorganFingerprintAsBitVect(  # type: ignore
         mol, radius, nBits=n_bits, useChirality=True
     ).ToList()
 
@@ -71,12 +82,12 @@ def maccs_featurizer(mol: Mol) -> List[int]:
     Calculates the MACCS fingerprint for a given molecule.
 
     Args:
-        mol (rdkit.Chem.rdchem.Mol): The molecule to calculate the fingerprint for.
+        mol (rdkit.Chem.Mol): The molecule to calculate the fingerprint for.
 
     Returns:
         List[int]: The MACCS fingerprint as a list of integers.
     """
-    return list(AllChem.GetMACCSKeysFingerprint(mol))
+    return list(AllChem.GetMACCSKeysFingerprint(mol))  # type: ignore
 
 
 def smiles2mol(smiles: str) -> Mol:
@@ -92,7 +103,7 @@ def smiles2mol(smiles: str) -> Mol:
     Raises:
         ValueError: If the SMILES string cannot be parsed into a molecule object.
     """
-    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.MolFromSmiles(smiles)  # type: ignore
     if mol is None:
         raise ValueError(f"Failed to parse SMILES: {smiles}")
     return mol
@@ -174,3 +185,127 @@ def parallel_map(
         List[Any]: A list containing the results of applying the function to each item in the iterable.
     """
     return list(Parallel(n_jobs=n_jobs)(delayed(func)(item) for item in iterable))
+
+
+def smi_supplier(path: str) -> Generator[Mol, None, None]:
+    """
+    Generator function that reads a file containing SMILES strings and yields RDKit molecules.
+
+    Args:
+        path (str): The path to the file containing SMILES strings.
+            Can be a .smi, .smiles, or .smi.gz file.
+
+    Yields:
+        Chem.Mol: RDKit molecule object.
+
+    """
+    if path.lower().endswith("gz"):
+        import gzip
+
+        f = gzip.open(path, "rt")
+    else:
+        f = open(path, "r")
+
+    for line in f:
+        fields = line.strip().split()
+        if len(fields) > 1:
+            name = fields[1]
+        else:
+            name = ""
+
+        mol = Chem.MolFromSmiles(fields[0])  # type: ignore
+
+        if mol is not None:
+            mol.SetProp("_Name", name)
+            yield mol
+
+    f.close()
+
+
+def smi_writer(
+    path: str, mols: Iterable[Mol], names: Optional[Sequence[Any]] = None
+) -> None:
+    """
+    Write a list of RDKit molecules to a file in SMILES format.
+
+    Args:
+        path (str): The path to the output file. Can be a .smi, .smiles, or .smi.gz file.
+        mols (Iterable[Mol]): The list of RDKit molecules to write to the file.
+        names (Optional[Sequence[Any]], optional): The names of the molecules.
+            If None, the names are taken from the RDKit molecule properties. Defaults to None.
+    """
+
+    if path.lower().endswith("gz"):
+        import gzip
+
+        handle = gzip.open(path, "wt")
+    else:
+        handle = open(path, "w")
+
+    for i, mol in enumerate(mols):
+        smiles = Chem.MolToSmiles(mol)  # type: ignore
+        if names is not None:
+            name = str(names[i])
+        else:
+            name = mol.GetProp("_Name")
+        handle.write(f"{smiles} {name}\n")
+
+    handle.close()
+
+
+def sdf_supplier(path: str, **kwargs) -> Generator[Mol, None, None]:
+    """
+    Generator function that reads an SDF file and yields RDKit molecules.
+
+    Args:
+        path (str): The path to the SDF file. Can be a .sdf or .sdf.gz file.
+        **kwargs: Additional keyword arguments to be passed to the RDKit ForwardSDMolSupplier.
+
+    Yields:
+        Chem.Mol: RDKit molecule object.
+
+    Returns:
+        None
+    """
+    if path.lower().endswith("gz"):
+        import gzip
+
+        handle = gzip.open(path, "rb")
+    else:
+        handle = open(path, "rb")  # type: ignore
+
+    supplier = Chem.ForwardSDMolSupplier(handle, **kwargs)  # type: ignore
+
+    for mol in supplier:
+        if mol is not None:
+            yield mol
+
+    handle.close()
+
+
+def sdf_writer(path: str, mols: Iterable[Mol], **kwargs) -> None:
+    """
+    Write a list of RDKit molecules to a file in SDF format.
+
+    Args:
+        path (str): The path to the output file. Can be a .sdf or .sdf.gz file.
+        mols (Iterable[Mol]): The list of RDKit molecules to write to the file.
+        **kwargs: Additional keyword arguments to be passed to the RDKit SDWriter.
+    """
+
+    if path.lower().endswith("gz"):
+        import gzip
+
+        f = gzip.open(path, "wt")
+    else:
+        f = open(path, "wt")
+
+    writer = Chem.SDWriter(f, **kwargs)  # type: ignore
+    for mol in mols:
+        writer.write(mol)
+
+    # Somehow necessary to flush the writer for pytest to work
+    writer.flush()
+    f.flush()
+
+    f.close()

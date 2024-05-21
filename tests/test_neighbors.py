@@ -10,7 +10,7 @@ np.random.seed(42)
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 INPUT_SMI_FILES = [
-    os.path.join(TESTS_DIR, "data", name) for name in ["inputs1.smi", "inputs2.smi"]
+    os.path.join(TESTS_DIR, "data", name) for name in ["inputs1.smi", "inputs2.smi.gz"]
 ]
 
 
