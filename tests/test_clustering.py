@@ -8,6 +8,7 @@ from chemicalspace.layers.clustering import (
     CLUSTERING_METHODS,
     ChemicalSpaceClusteringLayer,
     get_optimal_cluster_number,
+    CLUSTERING_METHODS_N,
 )
 
 np.random.seed(42)
@@ -24,7 +25,7 @@ def space() -> ChemicalSpaceClusteringLayer:
 
 @pytest.mark.parametrize("method", ["kmedoids", "agglomerative-clustering"])
 def test_silhouette(
-    space: ChemicalSpaceClusteringLayer, method: CLUSTERING_METHODS
+    space: ChemicalSpaceClusteringLayer, method: CLUSTERING_METHODS_N
 ) -> None:
     from functools import partial
 
@@ -51,9 +52,9 @@ def test_silhouette(
 @pytest.mark.parametrize(
     "method, n_clusters", [("kmedoids", None), ("agglomerative-clustering", 3)]
 )
-def test_cluster(
+def test_cluster_n(
     space: ChemicalSpaceClusteringLayer,
-    method: CLUSTERING_METHODS,
+    method: CLUSTERING_METHODS_N,
     n_clusters: Optional[int],
 ) -> None:
 
@@ -67,12 +68,24 @@ def test_cluster(
         assert set(clusters) == set(range(n_clusters))
 
 
+@pytest.mark.parametrize("method, kwargs", [("sphere-exclusion", {"radius": 0.8})])
+def test_cluster(
+    space: ChemicalSpaceClusteringLayer, method: CLUSTERING_METHODS, kwargs
+) -> None:
+
+    clusters = space.cluster(method=method, seed=42, **kwargs)
+
+    assert isinstance(clusters, np.ndarray)
+    assert np.issubdtype(clusters.dtype, np.integer)
+    assert len(clusters) == len(space)
+
+
 @pytest.mark.parametrize(
     "method, n_clusters", [("kmedoids", 3), ("agglomerative-clustering", None)]
 )
-def test_yield_clusters(
+def test_yield_clusters_n(
     space: ChemicalSpaceClusteringLayer,
-    method: CLUSTERING_METHODS,
+    method: CLUSTERING_METHODS_N,
     n_clusters: Optional[int],
 ) -> None:
     clusters = space.yield_clusters(n_clusters=n_clusters, method=method, seed=42)
@@ -86,23 +99,37 @@ def test_yield_clusters(
         assert i == n_clusters - 1
 
 
+@pytest.mark.parametrize("method, kwargs", [("sphere-exclusion", {"radius": 0.8})])
+def test_yield_clusters(
+    space: ChemicalSpaceClusteringLayer, method: CLUSTERING_METHODS, kwargs
+) -> None:
+    clusters = space.yield_clusters(method=method, seed=42, **kwargs)
+
+    i = None
+    for i, cluster in enumerate(clusters):
+        assert isinstance(cluster, ChemicalSpaceClusteringLayer)
+        assert len(cluster) > 0
+
+    assert i is not None
+
+
 @pytest.mark.parametrize(
     "method, n_clusters", [("kmedoids", 3), ("agglomerative-clustering", 3)]
 )
 def test_ksplits(
     space: ChemicalSpaceClusteringLayer,
-    method: CLUSTERING_METHODS,
+    method: CLUSTERING_METHODS_N,
     n_clusters: int,
 ) -> None:
     ks = space.ksplits(n_splits=n_clusters, method=method, seed=42)
 
-    for train_cluster, test_cluster in ks:
+    for cluster_train, cluster_test in ks:
 
-        assert isinstance(train_cluster, ChemicalSpaceClusteringLayer)
-        assert isinstance(test_cluster, ChemicalSpaceClusteringLayer)
+        assert isinstance(cluster_train, ChemicalSpaceClusteringLayer)
+        assert isinstance(cluster_test, ChemicalSpaceClusteringLayer)
 
-        assert len(train_cluster) > 0
-        assert len(test_cluster) > 0
-        # Check that there-s not overlap between train and test clusters
-        assert train_cluster - test_cluster == train_cluster
-        assert train_cluster + test_cluster == space
+        assert len(cluster_train) > 0
+        assert len(cluster_test) > 0
+        # Check that there's no overlap between train and test clusters
+        assert cluster_train - cluster_test == cluster_train
+        assert cluster_train + cluster_test == space
