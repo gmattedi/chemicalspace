@@ -1,6 +1,6 @@
 import warnings
 from functools import lru_cache, partial
-from typing import Any, Generator, List, Literal, Optional, Tuple, TypeAlias
+from typing import Any, Generator, List, Literal, Optional, Tuple, TypeAlias, Set
 
 import numpy as np
 from numpy.typing import NDArray
@@ -8,8 +8,12 @@ from numpy.typing import NDArray
 from .base import ChemicalSpaceBaseLayer
 from .utils import SEED, reduce_sum
 
-CLUSTERING_METHODS: TypeAlias = Literal["kmedoids", "agglomerative-clustering"]
-CLUSTER_NUMBER: TypeAlias = int | None
+CLUSTERING_METHODS: TypeAlias = Literal[
+    "kmedoids", "agglomerative-clustering", "sphere-exclusion"
+]
+CLUSTERING_METHODS_N: TypeAlias = Literal[
+    "kmedoids", "agglomerative-clustering"
+]  # methods that require n_clusters
 
 
 def get_optimal_cluster_number(
@@ -59,6 +63,71 @@ def get_optimal_cluster_number(
     return n
 
 
+class SphereExclusion:
+    """
+    A class representing a clustering algorithm based on sphere exclusion.
+    It clusters input points in a set of clusters such that the minimum
+    distance between any two clusters is (approximately) greater than a given radius.
+    """
+
+    def __init__(self, radius: float = 0.4, metric: str = "jaccard", **kwargs):
+        """
+        Initialize the SphereExclusion clustering algorithm.
+
+        Args:
+            radius (float, optional): The radius of the sphere. Defaults to 0.4.
+            metric (str, optional): The metric to use for clustering. Defaults to "jaccard".
+            **kwargs: Implemented for compatibility with other clustering algorithms. Ignored.
+        """
+        self.radius = radius
+        self.metric = metric
+        _ = kwargs  # discard
+
+    def fit_predict(self, X: NDArray[Any]) -> NDArray[np.int_]:
+        """
+        Perform clustering on the input data.
+
+        Args:
+            X (ndarray): The input data to cluster.
+
+        Returns:
+            NDArray[np.int_]: An array of cluster labels for each point.
+        """
+
+        from sklearn.neighbors import BallTree
+
+        tree = BallTree(X, metric=self.metric)
+
+        cluster_idx = 0
+
+        labels = np.full(X.shape[0], fill_value=-1, dtype=int)
+
+        for i in range(X.shape[0]):
+            if labels[i] != -1:
+                continue
+
+            idx = tree.query_radius(
+                X[i : i + 1],
+                r=self.radius,
+                return_distance=False,
+            )[0]
+
+            neighbor_labels: Set[int] = set(labels[idx]) - {-1}
+            for label in neighbor_labels:
+                mask = labels == label
+                labels[mask] = cluster_idx
+
+            labels[idx] = cluster_idx
+            cluster_idx += 1
+
+        # Renumber the clusters to start from 0
+        unique_labels = np.unique(labels)
+        for i, label in enumerate(unique_labels):
+            labels[labels == label] = i
+
+        return labels
+
+
 # @dataclass(frozen=False, repr=False)
 class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
     """
@@ -77,7 +146,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
     @lru_cache
     def cluster(
         self,
-        n_clusters: CLUSTER_NUMBER = None,
+        n_clusters: int | None = None,
         method: CLUSTERING_METHODS = "kmedoids",
         seed: int = SEED,
         **kwargs,
@@ -86,7 +155,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         Perform clustering on the chemical space data.
 
         Args:
-            n_clusters (int | None): The number of clusters to create.
+            n_clusters (int | None): The number of clusters to create (Ignored if not used).
                 If None, the number of clusters will be determined by silhouette score
             method (str): The clustering method to use.
             seed (int, optional): The random seed for reproducibility. Defaults to SEED.
@@ -101,6 +170,9 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
 
             obj = partial(KMedoids, metric=self.metric, random_state=seed)
 
+            if n_clusters is None:
+                n_clusters = get_optimal_cluster_number(self.features, obj, **kwargs)
+
         elif method == "agglomerative-clustering":
             from sklearn.cluster import AgglomerativeClustering
 
@@ -108,13 +180,21 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
                 AgglomerativeClustering, metric=self.metric, linkage="complete"
             )
 
+            if n_clusters is None:
+                n_clusters = get_optimal_cluster_number(self.features, obj, **kwargs)
+
+        elif method == "sphere-exclusion":
+            if "radius" not in kwargs:
+                raise ValueError("Sphere exclusion requires a `radius` parameter.")
+
+            obj = partial(SphereExclusion, radius=kwargs["radius"], metric=self.metric)
+
+            n_clusters = -1  # Sphere exclusion does not require n_clusters
+
         else:
             raise ValueError(f"Invalid clustering method: {method}")
 
-        if n_clusters is None:
-            n_clusters = get_optimal_cluster_number(self.features, obj, **kwargs)
-
-        clusterer = obj(n_clusters, **kwargs)
+        clusterer = obj(n_clusters=n_clusters, **kwargs)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -124,7 +204,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
 
     def yield_clusters(
         self,
-        n_clusters: CLUSTER_NUMBER = None,
+        n_clusters: int | None = None,
         method: CLUSTERING_METHODS = "kmedoids",
         seed: int = SEED,
         **kwargs,
@@ -133,7 +213,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         Yields clusters from the chemical space.
 
         Args:
-            n_clusters (int | None): The number of clusters to create.
+            n_clusters (int | None): The number of clusters to create. (Ignored if not used).
                 If None, the number of clusters will be determined by silhouette score
             method (CLUSTERING_METHODS): The clustering method to use.
             seed (int, optional): The random seed for reproducibility. Defaults to SEED.
@@ -159,7 +239,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
     def ksplits(
         self,
         n_splits: int,
-        method: CLUSTERING_METHODS = "kmedoids",
+        method: CLUSTERING_METHODS_N = "kmedoids",
         seed: int = SEED,
         **kwargs,
     ) -> Generator[
@@ -186,6 +266,11 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
                 **kwargs,
             )
         )
+
+        if len(clusters) != n_splits:
+            raise ValueError(
+                f"Number of clusters ({len(clusters)}) does not match number of splits requested ({n_splits})."
+            )
 
         for i in range(n_splits):
             train_lst: List[ChemicalSpaceBaseLayer] = []
