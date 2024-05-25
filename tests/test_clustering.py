@@ -68,7 +68,9 @@ def test_cluster_n(
         assert set(clusters) == set(range(n_clusters))
 
 
-@pytest.mark.parametrize("method, kwargs", [("sphere-exclusion", {"radius": 0.8})])
+@pytest.mark.parametrize(
+    "method, kwargs", [("sphere-exclusion", {"radius": 0.8}), ("scaffold", {})]
+)
 def test_cluster(
     space: ChemicalSpaceClusteringLayer, method: CLUSTERING_METHODS, kwargs
 ) -> None:
@@ -99,7 +101,9 @@ def test_yield_clusters_n(
         assert i == n_clusters - 1
 
 
-@pytest.mark.parametrize("method, kwargs", [("sphere-exclusion", {"radius": 0.8})])
+@pytest.mark.parametrize(
+    "method, kwargs", [("sphere-exclusion", {"radius": 0.8}), ("scaffold", {})]
+)
 def test_yield_clusters(
     space: ChemicalSpaceClusteringLayer, method: CLUSTERING_METHODS, kwargs
 ) -> None:
