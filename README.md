@@ -1,4 +1,4 @@
-![coverage](.badges/coverage.svg)&nbsp;&nbsp; 
+![coverage](.badges/coverage.svg)&nbsp;&nbsp;
 ![tests](.badges/tests.svg)
 
 # ChemicalSpace
@@ -74,7 +74,6 @@ print(space)
 Indexing, slicing and masking a `ChemicalSpace` object returns a new `ChemicalSpace` object.
 
 #### Indexing
-
 
 ```python
 from chemicalspace import ChemicalSpace
@@ -375,7 +374,10 @@ assert id(space.mols[0]) != id(space_deepcopy.mols[0])
 ### Labels
 
 A `ChemicalSpace` can be clustered using by its molecular features.
-`kmedoids` and `agglomerative-clustering` are the available clustering methods.
+`kmedoids`, `agglomerative-clustering`, `sphere-exclusion` and `scaffold`
+are the available clustering methods.
+Refer to the respective methods in [`chemicalspace.layers.clustering`](chemicalspace/layers/clustering.py)
+for more details.
 
 ```python
 from chemicalspace import ChemicalSpace

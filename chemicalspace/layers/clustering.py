@@ -1,19 +1,73 @@
 import warnings
+from abc import ABC, abstractmethod
 from functools import lru_cache, partial
-from typing import Any, Generator, List, Literal, Optional, Tuple, TypeAlias, Set
+from typing import (
+    Any,
+    Generator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    TypeAlias,
+    Set,
+    Sequence,
+    Dict,
+)
 
 import numpy as np
 from numpy.typing import NDArray
+from rdkit.Chem import Mol  # type: ignore
 
 from .base import ChemicalSpaceBaseLayer
-from .utils import SEED, reduce_sum
+from .utils import SEED, reduce_sum, hash_mol
 
 CLUSTERING_METHODS: TypeAlias = Literal[
-    "kmedoids", "agglomerative-clustering", "sphere-exclusion"
+    "kmedoids", "agglomerative-clustering", "sphere-exclusion", "scaffold"
 ]
 CLUSTERING_METHODS_N: TypeAlias = Literal[
     "kmedoids", "agglomerative-clustering"
 ]  # methods that require n_clusters
+
+
+class BaseClusteringX(ABC):
+    """
+    BaseClusteringMethod is an abstract class that defines the interface for clustering methods
+    that take in an array of features and return an array of cluster labels.
+    """
+
+    @abstractmethod
+    def fit_predict(self, X: NDArray[Any]) -> NDArray[np.int_]:
+        """
+        Perform clustering on the input data.
+
+        Args:
+            X (ndarray): The input data to cluster.
+
+        Returns:
+            NDArray[np.int_]: An array of cluster labels for each point.
+        """
+        raise NotImplementedError
+
+
+class BaseClusteringMols(ABC):
+    """
+    BaseClusteringMols is an abstract class that defines the interface for clustering methods
+    that take in an array of RDKit molecules and return an array of cluster labels.
+    """
+
+    @abstractmethod
+    def fit_predict(self, mols: Sequence[Mol], **kwargs) -> NDArray[np.int_]:
+        """
+        Perform clustering on the input data.
+
+        Args:
+            mols (Sequence[Mol]): The input molecules to cluster.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            NDArray[np.int_]: An array of cluster labels for each molecule.
+        """
+        raise NotImplementedError
 
 
 def get_optimal_cluster_number(
@@ -63,7 +117,7 @@ def get_optimal_cluster_number(
     return n
 
 
-class SphereExclusion:
+class SphereExclusion(BaseClusteringX):
     """
     A class representing a clustering algorithm based on sphere exclusion.
     It clusters input points in a set of clusters such that the minimum
@@ -126,6 +180,62 @@ class SphereExclusion:
             labels[labels == label] = i
 
         return labels
+
+
+class ScaffoldClustering(BaseClusteringMols):
+    """
+    A class representing a clustering algorithm based on Murcko scaffolds.
+    """
+
+    def __init__(self, generic: bool = True, **kwargs):
+        """
+        Initialize the ScaffoldClustering algorithm.
+
+        Args:
+            generic (bool, optional): Whether to use generic scaffolds. Defaults to True.
+            **kwargs: Implemented for compatibility with other clustering algorithms. Ignored.
+        """
+        self.generic = generic
+        _ = kwargs
+
+    def fit_predict(self, mols: Sequence[Mol] | NDArray[Mol], **kwargs):
+        """
+        Perform clustering on the input data.
+
+        Args:
+            mols (Sequence[Mol] | NDArray[Mol]): The input molecules to cluster.
+            **kwargs: Additional keyword arguments. Ignored.
+
+        Returns:
+
+        """
+        from rdkit.Chem.Scaffolds import MurckoScaffold
+
+        _ = kwargs  # discard
+
+        labels: List[int] = []
+        cluster_mapping: Dict[str, int] = {}
+        c = 0
+        for mol in mols:
+            murcko = MurckoScaffold.GetScaffoldForMol(mol)
+            if self.generic:
+                murcko = MurckoScaffold.MakeScaffoldGeneric(murcko)
+
+            if murcko.GetNumAtoms() > 0:
+                murcko_hash = hash_mol(murcko)
+            else:
+                murcko_hash = ""
+
+            if murcko_hash in cluster_mapping:
+                murcko_label = cluster_mapping[murcko_hash]
+            else:
+                cluster_mapping[murcko_hash] = c
+                murcko_label = c
+                c += 1
+
+            labels.append(murcko_label)
+
+        return np.array(labels)
 
 
 # @dataclass(frozen=False, repr=False)
@@ -191,6 +301,10 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
 
             n_clusters = -1  # Sphere exclusion does not require n_clusters
 
+        elif method == "scaffold":
+            obj = partial(ScaffoldClustering, **kwargs)
+            n_clusters = -1  # Scaffold clustering does not require n_clusters
+
         else:
             raise ValueError(f"Invalid clustering method: {method}")
 
@@ -198,7 +312,10 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            labels = np.array(clusterer.fit_predict(self.features), dtype=int)
+            if isinstance(clusterer, BaseClusteringMols):
+                labels = np.array(clusterer.fit_predict(self.mols), dtype=int)
+            else:
+                labels = np.array(clusterer.fit_predict(self.features), dtype=int)
 
         return labels
 
