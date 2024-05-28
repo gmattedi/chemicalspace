@@ -12,6 +12,7 @@ from typing import (
     Sequence,
     Dict,
     Union,
+    get_args,
 )
 
 import numpy as np
@@ -22,12 +23,15 @@ from typing_extensions import TypeAlias
 from .base import ChemicalSpaceBaseLayer
 from .utils import SEED, reduce_sum, hash_mol
 
-CLUSTERING_METHODS: TypeAlias = Literal[
+ClusteringMethodsType: TypeAlias = Literal[
     "kmedoids", "agglomerative-clustering", "sphere-exclusion", "scaffold"
 ]
-CLUSTERING_METHODS_N: TypeAlias = Literal[
+CLUSTERING_METHODS: Tuple[str, ...] = get_args(ClusteringMethodsType)
+
+ClusteringMethodsTypeN: TypeAlias = Literal[
     "kmedoids", "agglomerative-clustering"
 ]  # methods that require n_clusters
+CLUSTERING_METHODS_N: Tuple[str, ...] = get_args(ClusteringMethodsTypeN)
 
 
 class BaseClusteringX(ABC):
@@ -258,7 +262,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
     def cluster(
         self,
         n_clusters: Optional[int] = None,
-        method: CLUSTERING_METHODS = "kmedoids",
+        method: ClusteringMethodsType = "kmedoids",
         seed: int = SEED,
         **kwargs,
     ) -> NDArray[np.int_]:
@@ -295,16 +299,12 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
                 n_clusters = get_optimal_cluster_number(self.features, obj, **kwargs)
 
         elif method == "sphere-exclusion":
-            if "radius" not in kwargs:
-                raise ValueError("Sphere exclusion requires a `radius` parameter.")
-
-            obj = partial(SphereExclusion, radius=kwargs["radius"], metric=self.metric)
-
-            n_clusters = -1  # Sphere exclusion does not require n_clusters
+            obj = partial(SphereExclusion, metric=self.metric, **kwargs)
+            n_clusters = -1
 
         elif method == "scaffold":
             obj = partial(ScaffoldClustering, **kwargs)
-            n_clusters = -1  # Scaffold clustering does not require n_clusters
+            n_clusters = -1
 
         else:
             raise ValueError(f"Invalid clustering method: {method}")
@@ -318,12 +318,20 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
             else:
                 labels = np.array(clusterer.fit_predict(self.features), dtype=int)
 
+        n_clusters_actual = len(set(labels))
+
+        if n_clusters is not None:
+            if (n_clusters > 0) and (n_clusters_actual != n_clusters):
+                raise ValueError(
+                    f"Number of clusters ({len(set(labels))}) does not match number of clusters requested ({n_clusters})."
+                )
+
         return labels
 
     def yield_clusters(
         self,
         n_clusters: Optional[int] = None,
-        method: CLUSTERING_METHODS = "kmedoids",
+        method: ClusteringMethodsType = "kmedoids",
         seed: int = SEED,
         **kwargs,
     ) -> Generator[ChemicalSpaceBaseLayer, Any, None]:
@@ -348,16 +356,21 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
             **kwargs,
         )
 
-        n = len(set(labels))
+        n_cluster_actual = len(set(labels))
 
-        for i in range(n):
+        if (n_clusters is not None) and (n_cluster_actual != n_clusters):
+            raise ValueError(
+                f"Number of clusters ({n_cluster_actual}) does not match number of clusters requested ({n_clusters})."
+            )
+
+        for i in range(n_cluster_actual):
             mask = np.array(labels == i)
             yield self[mask]
 
-    def ksplits(
+    def split(
         self,
-        n_splits: int,
-        method: CLUSTERING_METHODS_N = "kmedoids",
+        n_splits: Optional[int] = None,
+        method: ClusteringMethodsType = "kmedoids",
         seed: int = SEED,
         **kwargs,
     ) -> Generator[
@@ -367,7 +380,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         Generate train-test splits based on clustering.
 
         Args:
-            n_splits (int): The number of splits to generate.
+            n_splits (Optional[int]): The number of splits to generate, if supported by the clustering method.
             method (str): The clustering method to use.
             seed (int, optional): The random seed for reproducibility. Defaults to SEED.
             **kwargs: Additional keyword arguments to pass to the clustering algorithm.
@@ -385,16 +398,18 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
             )
         )
 
-        if len(clusters) != n_splits:
+        if (n_splits is not None) and (len(clusters) != n_splits):
             raise ValueError(
                 f"Number of clusters ({len(clusters)}) does not match number of splits requested ({n_splits})."
             )
 
-        for i in range(n_splits):
+        n_splits_actual = len(clusters)
+
+        for i in range(n_splits_actual):
             train_lst: List[ChemicalSpaceBaseLayer] = []
             test = clusters[i]
 
-            for j in range(n_splits):
+            for j in range(n_splits_actual):
                 if j != i:
                     train_lst.append(clusters[j])
 
