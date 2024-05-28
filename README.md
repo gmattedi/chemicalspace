@@ -414,7 +414,7 @@ for cluster in clusters:
 
 ### KFold Clustering
 
-`ChemicalSpace.ksplits` can be used to iterate train/test cluster splits for ML training.
+`ChemicalSpace.splits` can be used to iterate train/test cluster splits for ML training.
 At each iteration, one cluster is used as the test set and the rest as the training set.
 Note that there is no guarantee on the size of the clusters.
 
@@ -423,7 +423,7 @@ from chemicalspace import ChemicalSpace
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
 
-for train, test in space.ksplits(n_splits=3):
+for train, test in space.split(n_splits=3):
     print(train, test)
 ```
 
