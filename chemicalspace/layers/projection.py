@@ -1,8 +1,9 @@
 from functools import lru_cache
-from typing import Literal, TypeAlias
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
+from typing_extensions import TypeAlias
 
 from .base import ChemicalSpaceBaseLayer
 from .utils import SEED

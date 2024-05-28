@@ -8,15 +8,16 @@ from typing import (
     Literal,
     Optional,
     Tuple,
-    TypeAlias,
     Set,
     Sequence,
     Dict,
+    Union,
 )
 
 import numpy as np
 from numpy.typing import NDArray
 from rdkit.Chem import Mol  # type: ignore
+from typing_extensions import TypeAlias
 
 from .base import ChemicalSpaceBaseLayer
 from .utils import SEED, reduce_sum, hash_mol
@@ -198,7 +199,7 @@ class ScaffoldClustering(BaseClusteringMols):
         self.generic = generic
         _ = kwargs
 
-    def fit_predict(self, mols: Sequence[Mol] | NDArray[Mol], **kwargs):
+    def fit_predict(self, mols: Union[Sequence[Mol], NDArray[Mol]], **kwargs):
         """
         Perform clustering on the input data.
 
@@ -256,7 +257,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
     @lru_cache
     def cluster(
         self,
-        n_clusters: int | None = None,
+        n_clusters: Optional[int] = None,
         method: CLUSTERING_METHODS = "kmedoids",
         seed: int = SEED,
         **kwargs,
@@ -321,7 +322,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
 
     def yield_clusters(
         self,
-        n_clusters: int | None = None,
+        n_clusters: Optional[int] = None,
         method: CLUSTERING_METHODS = "kmedoids",
         seed: int = SEED,
         **kwargs,

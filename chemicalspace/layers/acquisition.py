@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Literal, Optional, Sequence, TypeAlias
+from typing import Any, List, Literal, Optional, Sequence, Union
 
 import numpy as np
 from numpy.typing import NDArray
+from typing_extensions import TypeAlias
 
 from chemicalspace.layers.base import ChemicalSpaceBaseLayer, T
 
@@ -14,7 +15,7 @@ class BaseAcquisitionStrategy(ABC):
     implement a method to pick samples from a set of inputs.
     """
 
-    def __init__(self, inputs: Sequence[Any] | NDArray[Any], **kwargs):
+    def __init__(self, inputs: Union[Sequence[Any], NDArray[Any]], **kwargs):
         """
         Initialize the acquisition strategy with input object features and scores
 
@@ -49,8 +50,8 @@ class BaseAcquisitionStrategyRequiresScores(BaseAcquisitionStrategy, ABC):
 
     def __init__(
         self,
-        inputs: Sequence[Any] | NDArray[Any],
-        scores: Sequence[Any] | NDArray[Any],
+        inputs: Union[Sequence[Any], NDArray[Any]],
+        scores: Union[Sequence[Any], NDArray[Any]],
         **kwargs,
     ):
         """
@@ -112,7 +113,7 @@ class MaxMinStrategy(BaseAcquisitionStrategy):
 
     def __init__(
         self,
-        inputs: Sequence[Any] | NDArray[Any],
+        inputs: Union[Sequence[Any], NDArray[Any]],
         metric: str = "jaccard",
         seed: int = 42,
         **kwargs,
@@ -157,7 +158,7 @@ class MaxMinStrategy(BaseAcquisitionStrategy):
         """
         from rdkit.SimDivFilters.rdSimDivPickers import MaxMinPicker
 
-        picker = MaxMinPicker()
+        picker = MaxMinPicker()  # type: ignore
         indices = picker.LazyPick(self.distij, len(self.inputs), n, seed=self.seed)
 
         return list(indices)
@@ -174,8 +175,8 @@ strategies_dict = {
 def pick_samples(
     n: int,
     strategy: STRATEGIES,
-    inputs: Sequence[Any] | NDArray[Any],
-    scores: Optional[Sequence[Any] | NDArray[Any]] = None,
+    inputs: Union[Sequence[Any], NDArray[Any]],
+    scores: Optional[Union[Sequence[Any], NDArray[Any]]] = None,
     **strategy_kwargs,
 ) -> NDArray[np.int_]:
     """
