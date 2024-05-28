@@ -299,14 +299,12 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
                 n_clusters = get_optimal_cluster_number(self.features, obj, **kwargs)
 
         elif method == "sphere-exclusion":
-
             obj = partial(SphereExclusion, metric=self.metric, **kwargs)
-
-            n_clusters = -1  # Sphere exclusion does not require n_clusters
+            n_clusters = -1
 
         elif method == "scaffold":
             obj = partial(ScaffoldClustering, **kwargs)
-            n_clusters = -1  # Scaffold clustering does not require n_clusters
+            n_clusters = -1
 
         else:
             raise ValueError(f"Invalid clustering method: {method}")
@@ -319,6 +317,14 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
                 labels = np.array(clusterer.fit_predict(self.mols), dtype=int)
             else:
                 labels = np.array(clusterer.fit_predict(self.features), dtype=int)
+
+        n_clusters_actual = len(set(labels))
+
+        if n_clusters is not None:
+            if (n_clusters > 0) and (n_clusters_actual != n_clusters):
+                raise ValueError(
+                    f"Number of clusters ({len(set(labels))}) does not match number of clusters requested ({n_clusters})."
+                )
 
         return labels
 
@@ -350,9 +356,14 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
             **kwargs,
         )
 
-        n = len(set(labels))
+        n_cluster_actual = len(set(labels))
 
-        for i in range(n):
+        if (n_clusters is not None) and (n_cluster_actual != n_clusters):
+            raise ValueError(
+                f"Number of clusters ({n_cluster_actual}) does not match number of clusters requested ({n_clusters})."
+            )
+
+        for i in range(n_cluster_actual):
             mask = np.array(labels == i)
             yield self[mask]
 
