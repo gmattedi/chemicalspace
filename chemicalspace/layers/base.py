@@ -9,17 +9,17 @@ from typing import (
     Optional,
     Sequence,
     Type,
-    TypeAlias,
     TypeVar,
+    Union,
 )
 
 import numpy as np
 from numpy.typing import NDArray
 from rdkit import Chem
 from rdkit.Chem import Mol  # type: ignore
+from typing_extensions import TypeAlias
 
 from chemicalspace.layers import utils
-
 from .utils import (
     MaybeIndex,
     MaybeScore,
@@ -32,7 +32,7 @@ from .utils import (
 )
 
 T = TypeVar("T", bound="ChemicalSpaceBaseLayer")
-ScoreArray: TypeAlias = NDArray[np.int_] | NDArray[np.float_] | NDArray[np.bool_]
+ScoreArray: TypeAlias = Union[NDArray[np.int_], NDArray[np.float_], NDArray[np.bool_]]
 
 
 class ChemicalSpaceBaseLayer(ABC):
@@ -72,10 +72,11 @@ class ChemicalSpaceBaseLayer(ABC):
         """
         mols_m = np.array((parallel_map(utils.safe_smiles2mol, mols, n_jobs=n_jobs)))
         self.mols: NDArray[Mol] = np.array(mols_m)
-        self.indices: NDArray[Any] | None = (
+
+        self.indices: Union[NDArray[Any], None] = (
             np.array(indices) if indices is not None else None
         )
-        self.scores: ScoreArray | None = (
+        self.scores: Union[ScoreArray, None] = (
             np.array(scores) if scores is not None else None
         )
         self.n_jobs = n_jobs
@@ -90,7 +91,7 @@ class ChemicalSpaceBaseLayer(ABC):
         if (features is not None) and (len(features) != len(self.mols)):
             raise ValueError("Number of features must match number of molecules")
 
-        self._features: NDArray[Any] | None = features
+        self._features: Union[NDArray[Any], None] = features
 
         self.name = self.__class__.__name__
 
@@ -178,8 +179,10 @@ class ChemicalSpaceBaseLayer(ABC):
                 if self._features is not None:
                     features_idx.append(i)
 
-        idx: List[Any] | None = idx_lst if self.indices is not None else None
-        scores: List[Number] | None = scores_lst if self.scores is not None else None
+        idx: Union[List[Any], None] = idx_lst if self.indices is not None else None
+        scores: Union[List[Number], None] = (
+            scores_lst if self.scores is not None else None
+        )
 
         if self._features is not None:
             features = self._features[features_idx]
@@ -426,7 +429,7 @@ class ChemicalSpaceBaseLayer(ABC):
         mols_hashes = parallel_map(utils.hash_mol, self.mols, n_jobs=self.n_jobs)
 
         for i in range(len(self)):
-            mol = self.mols[i]
+            mol: Mol = self.mols[i]
             mol_hash = mols_hashes[i]
 
             if mol_hash in cache:
@@ -440,8 +443,10 @@ class ChemicalSpaceBaseLayer(ABC):
                 if self._features is not None:
                     features_idx.append(i)
 
-        idx: List[Any] | None = indices_lst if self.indices is not None else None
-        scores: List[Number] | None = scores_lst if self.scores is not None else None
+        idx: Union[List[Any], None] = indices_lst if self.indices is not None else None
+        scores: Union[List[Number], None] = (
+            scores_lst if self.scores is not None else None
+        )
         features = self._features[features_idx] if self._features is not None else None
 
         return factory(
@@ -456,7 +461,7 @@ class ChemicalSpaceBaseLayer(ABC):
         )
 
     def __getitem__(
-        self, idx: int | SliceType | NDArray[np.bool_] | List[bool] | List[int]
+        self, idx: Union[int, SliceType, NDArray[np.bool_], List[bool], List[int]]
     ) -> T:  # type: ignore
         """
         Retrieve the item(s) at the specified index or slice.

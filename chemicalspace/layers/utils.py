@@ -8,7 +8,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    TypeAlias,
     Union,
 )
 
@@ -17,17 +16,18 @@ from joblib import Parallel, delayed
 from numpy.typing import NDArray
 from rdkit import Chem
 from rdkit.Chem import AllChem, Mol, inchi  # type: ignore
+from typing_extensions import TypeAlias
 
 Number: TypeAlias = Union[int, float]
 MaybeIndex: TypeAlias = Union[Any, None]
 MaybeScore: TypeAlias = Union[Number, None]
 MolOrSmiles: TypeAlias = Union[Mol, str]
-IntOrNone: TypeAlias = int | None
+IntOrNone: TypeAlias = Union[int, None]
 SliceType: TypeAlias = slice
 MolFeaturizerType: TypeAlias = Callable[
     [Mol], Union[Sequence[Number], NDArray[np.int_], NDArray[np.float_]]
 ]
-ArrayIntOrFloat: TypeAlias = NDArray[np.int_] | NDArray[np.float_]
+ArrayIntOrFloat: TypeAlias = Union[NDArray[np.int_], NDArray[np.float_]]
 
 
 SEED: int = 42
@@ -305,7 +305,7 @@ def sdf_writer(path: str, mols: Iterable[Mol], **kwargs) -> None:
         writer.write(mol)
 
     # Somehow necessary to flush the writer for pytest to work
-    writer.flush()
+    writer.flush()  # type: ignore
     f.flush()
 
     f.close()
