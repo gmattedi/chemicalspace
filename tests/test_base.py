@@ -258,11 +258,18 @@ def test_dual_operations(
     space_add: ChemicalSpaceBaseLayer = space.copy()
     space_add.add(mol=other_space.mols[0], idx=idx)
     assert len(space_add) == len(space) + 1
-    if space_add._features is not None:  # placate pyright
+    # Placate pyright
+    if (
+        (space._features is not None)
+        and (other_space._features is not None)
+        and (space_add._features is not None)
+    ):
         assert np.allclose(
             space_add._features,
             np.vstack([space._features, other_space._features[0]]),  # type: ignore
         )
+    else:
+        raise ValueError("Features are not computed")
 
     combined_spaces = space + other_space
 
@@ -276,6 +283,8 @@ def test_dual_operations(
             combined_spaces._features,
             np.vstack([space._features, other_space._features]),  # type: ignore
         )
+    else:
+        raise ValueError("Features are not computed")
 
     subtracted_spaces = other_space - space
     assert len(subtracted_spaces) == 10
