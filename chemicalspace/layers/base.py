@@ -19,8 +19,7 @@ from rdkit import Chem
 from rdkit.Chem import Mol  # type: ignore
 from typing_extensions import TypeAlias
 
-from chemicalspace.layers import utils
-from .utils import (
+from chemicalspace.utils import (
     MaybeIndex,
     MaybeScore,
     MolFeaturizerType,
@@ -30,6 +29,7 @@ from .utils import (
     factory,
     parallel_map,
 )
+from .. import utils
 
 T = TypeVar("T", bound="ChemicalSpaceBaseLayer")
 ScoreArray: TypeAlias = Union[NDArray[np.int_], NDArray[np.float_], NDArray[np.bool_]]

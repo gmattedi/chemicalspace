@@ -6,8 +6,8 @@ from numpy.typing import NDArray
 from sklearn.metrics import pairwise_distances_chunked, pairwise_distances
 from typing_extensions import Literal, TypeAlias
 
+from chemicalspace.utils import ArrayIntOrFloat, parallel_map
 from .base import ChemicalSpaceBaseLayer
-from .utils import ArrayIntOrFloat, parallel_map
 
 
 def reduce_sum(x, _):

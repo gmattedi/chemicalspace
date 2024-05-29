@@ -8,7 +8,7 @@ import pytest
 from rdkit.Chem.rdchem import Mol
 
 from chemicalspace.layers.base import ChemicalSpaceBaseLayer
-from chemicalspace.layers.utils import (
+from chemicalspace.utils import (
     MolFeaturizerType,
     ecfp4_featurizer,
     maccs_featurizer,

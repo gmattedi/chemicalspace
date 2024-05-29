@@ -5,8 +5,8 @@ import numpy as np
 from numpy.typing import NDArray
 from typing_extensions import TypeAlias
 
+from chemicalspace.utils import SEED
 from .base import ChemicalSpaceBaseLayer
-from .utils import SEED
 
 PROJECTION_METHODS: TypeAlias = Literal["umap", "tsne", "pca"]
 

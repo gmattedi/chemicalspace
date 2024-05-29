@@ -20,8 +20,8 @@ from numpy.typing import NDArray
 from rdkit.Chem import Mol  # type: ignore
 from typing_extensions import TypeAlias
 
+from chemicalspace.utils import SEED, reduce_sum, hash_mol
 from .base import ChemicalSpaceBaseLayer
-from .utils import SEED, reduce_sum, hash_mol
 
 ClusteringMethodsType: TypeAlias = Literal[
     "kmedoids", "agglomerative-clustering", "sphere-exclusion", "scaffold"
