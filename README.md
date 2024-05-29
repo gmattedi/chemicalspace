@@ -203,7 +203,7 @@ return value should be castable to NumPy array (see `chemicalspace.utils.MolFeat
 
 ```python
 from chemicalspace import ChemicalSpace
-from chemicalspace.layers.utils import maccs_featurizer
+from chemicalspace.utils import maccs_featurizer
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi", featurizer=maccs_featurizer)
 space_slice = space[:6:2]

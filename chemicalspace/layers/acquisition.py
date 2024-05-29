@@ -20,9 +20,10 @@ class BaseAcquisitionStrategy(ABC):
         Initialize the acquisition strategy with input object features and scores
 
         Args:
-            inputs (Sequence[Any] | NDArray[Any]): Inputs features to the acquisition strategy.
-            scores (Optional[Sequence[Any] | NDArray[Any]], optional): Scores associated with the inputs.
-                Defaults to None.
+            inputs (Sequence[Any] | NDArray[Any]): Inputs features to the
+                acquisition strategy.
+            scores (Optional[Sequence[Any] | NDArray[Any]], optional): Scores
+                associated with the inputs. Defaults to None.
         """
         self.inputs = np.array(inputs)
         self.kwargs = kwargs
@@ -58,9 +59,10 @@ class BaseAcquisitionStrategyRequiresScores(BaseAcquisitionStrategy, ABC):
         Initialize the acquisition strategy with input object features and scores
 
         Args:
-            inputs (Sequence[Any] | NDArray[Any]): Inputs features to the acquisition strategy.
-            scores (Optional[Sequence[Any] | NDArray[Any]], optional): Scores associated with the inputs.
-                Defaults to None.
+            inputs (Sequence[Any] | NDArray[Any]):
+                Inputs features to the acquisition strategy.
+            scores (Optional[Sequence[Any] | NDArray[Any]], optional):
+                Scores associated with the inputs. Defaults to None.
         """
         super().__init__(inputs, **kwargs)
         self.scores = scores
@@ -88,7 +90,8 @@ class RandomStrategy(BaseAcquisitionStrategy):
 
 class GreedyStrategy(BaseAcquisitionStrategyRequiresScores):
     """
-    GreedyStrategy is an acquisition strategy that picks samples greedily based on scores.
+    GreedyStrategy is an acquisition strategy
+    that picks samples greedily based on scores.
     """
 
     def __call__(self, n: int) -> List[int]:
@@ -108,7 +111,8 @@ class GreedyStrategy(BaseAcquisitionStrategyRequiresScores):
 
 class MaxMinStrategy(BaseAcquisitionStrategy):
     """
-    MaxMinStrategy is an acquisition strategy that picks samples based on the MaxMin algorithm.
+    MaxMinStrategy is an acquisition strategy that picks
+    samples based on the MaxMin algorithm.
     """
 
     def __init__(
@@ -122,7 +126,8 @@ class MaxMinStrategy(BaseAcquisitionStrategy):
         Initialize the acquisition strategy with input object features and scores
 
         Args:
-            inputs (Sequence[Any] | NDArray[Any]): Inputs features to the acquisition strategy.
+            inputs (Sequence[Any] | NDArray[Any]): Inputs features to the
+                acquisition strategy.
             metric (str): Metric to use for computing the distance between the samples.
             seed (int, optional): Random seed for reproducibility. Defaults to 42.
         """
@@ -135,7 +140,8 @@ class MaxMinStrategy(BaseAcquisitionStrategy):
             self.metric_fn = getattr(distance, metric)
         except AttributeError:
             raise ValueError(
-                f"Unknown metric: {metric}. Pass a valid metric from scipy.spatial.distance."
+                f"Unknown metric: {metric}. "
+                f"Pass a valid metric from scipy.spatial.distance."
             )
 
         def distij(i: int, j: int) -> float:
@@ -185,9 +191,12 @@ def pick_samples(
     Args:
         n (int): Number of samples to pick.
         strategy (STRATEGIES): Strategy to use for picking samples.
-        inputs (Sequence[Any] | NDArray[Any]): Inputs features to the acquisition strategy.
-        scores (Optional[Sequence[Any] | NDArray[Any]], optional): Scores associated with the inputs.
-        **strategy_kwargs: Additional keyword arguments to pass to the acquisition strategy.
+        inputs (Sequence[Any] | NDArray[Any]):
+            Inputs features to the acquisition strategy.
+        scores (Optional[Sequence[Any] | NDArray[Any]], optional):
+            Scores associated with the inputs.
+        **strategy_kwargs: Additional keyword arguments
+            to pass to the acquisition strategy.
 
     Returns:
         NDArray[np.int_]: Array of indices of the picked samples.
@@ -195,7 +204,8 @@ def pick_samples(
     """
     if strategy not in strategies_dict:
         raise ValueError(
-            f"Unknown strategy: {strategy}. Allowed strategies: {list(strategies_dict.keys())}"
+            f"Unknown strategy: {strategy}. "
+            f"Allowed strategies: {list(strategies_dict.keys())}"
         )
 
     strategy_class = strategies_dict[strategy]
@@ -212,14 +222,18 @@ class ChemicalSpaceAcquisitionLayer(ChemicalSpaceBaseLayer):
     chemical space.
     """
 
-    def pick(self, n: int, strategy: STRATEGIES = "random", **strategy_kwargs) -> T:  # type: ignore
+    def pick(
+        self, n: int, strategy: STRATEGIES = "random", **strategy_kwargs
+    ) -> T:  # type: ignore
         """
         Pick n samples from the chemical space using the specified strategy.
 
         Args:
             n (int): Number of samples to pick.
-            strategy (STRATEGIES, optional): Strategy to use for picking samples. Defaults to "random".
-            **strategy_kwargs: Additional keyword arguments to pass to the acquisition strategy.
+            strategy (STRATEGIES, optional): Strategy to use for picking samples.
+                Defaults to "random".
+            **strategy_kwargs: Additional keyword arguments to pass
+                to the acquisition strategy.
 
         Returns:
             T: A ChemicalSpace object with the picked samples.

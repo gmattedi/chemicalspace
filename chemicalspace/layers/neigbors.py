@@ -20,13 +20,16 @@ def _find_overlap(
     Parameters:
         cs1 (ChemicalSpaceBaseLayer): The first chemical space layer.
         cs2 (ChemicalSpaceBaseLayer): The second chemical space layer.
-        radius (float, optional): The radius within which to search for neighbors. Defaults to 0.4.
-        min_neighbors (int, optional): The minimum number of neighbors required for a point in `cs2`
-            to be considered overlapping with `cs1`. Defaults to 1.
-        metric (str, optional): The metric to use for the BallTree. Defaults to "jaccard".
+        radius (float, optional): The radius within which to search for neighbors.
+            Defaults to 0.4.
+        min_neighbors (int, optional): The minimum number of neighbors required
+            for a point in `cs2` to be considered overlapping with `cs1`. Defaults to 1.
+        metric (str, optional): The metric to use for the BallTree.
+            Defaults to "jaccard".
 
     Returns:
-        NDArray[np.int_]: The indices of points in `cs2` that have at least `min_neighbors` neighbors in `cs1`.
+        NDArray[np.int_]: The indices of points in `cs2` that have at least
+            `min_neighbors` neighbors in `cs1`.
     """
 
     tree = BallTree(cs1.features, metric=metric)
@@ -48,16 +51,20 @@ class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
         self, mol: Mol, radius: float = 0.6, min_neighbors: int = 1  # type: ignore
     ):
         """
-        Find the indices of points in `self` that have at least `min_neighbors` neighbors
-        within a given `radius` similarity threshold to a given molecule.
+        Find the indices of points in `self` that have at least
+        `min_neighbors` neighbors within a given `radius` similarity threshold to a
+        given molecule.
 
         Args:
             mol (Mol): The molecule to find neighbors for.
-            radius (float, optional): The radius within which to search for neighbors. Defaults to 0.6.
-            min_neighbors (int, optional): The minimum number of neighbors required for a point
+            radius (float, optional): The radius within which to search for neighbors.
+                Defaults to 0.6.
+            min_neighbors (int, optional):
+                The minimum number of neighbors required for a point
 
         Returns:
-            NDArray[np.int_]: The indices of points in `self` that have at least `min_neighbors` neighbors.
+            NDArray[np.int_]: The indices of points in `self` that have at least
+                `min_neighbors` neighbors.
 
         """
         other = ChemicalSpaceBaseLayer(mols=(mol,))
@@ -67,29 +74,36 @@ class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
         self, other: T, radius: float = 0.6, min_neighbors: int = 1  # type: ignore
     ) -> NDArray[np.int_]:
         """
-        Find the indices of points in `self` that have at least `min_neighbors` neighbors
-        in `other` within a given `radius` similarity threshold.
+        Find the indices of points in `self` that have at least `min_neighbors`
+        neighbors in `other` within a given `radius` similarity threshold.
 
         Args:
             other (ChemicalSpaceBaseLayer): The other chemical space layer.
-            radius (float, optional): The radius within which to search for neighbors. Defaults to 0.6.
-            min_neighbors (int, optional): The minimum number of neighbors required for a point in `other`
+            radius (float, optional): The radius within which to search for neighbors.
+                Defaults to 0.6.
+            min_neighbors (int, optional): The minimum number of neighbors required
+                for a point in `other`
 
         Returns:
-            NDArray[np.int_]: The indices of points in `self` that have at least `min_neighbors` neighbors in `other`.
+            NDArray[np.int_]: The indices of points in `self` that have at least
+                `min_neighbors` neighbors in `other`.
 
         """
         return _find_overlap(other, self, radius, min_neighbors, metric=self.metric)
 
-    def carve(self, other: T, radius: float = 0.6, min_neighbors: int = 1) -> T:  # type: ignore
+    def carve(
+        self, other: T, radius: float = 0.6, min_neighbors: int = 1
+    ) -> T:  # type: ignore
         """
         Remove points from `self` that have at least `min_neighbors` neighbors in
         `other` within a given `radius` similarity threshold.
 
         Args:
             other (ChemicalSpaceBaseLayer): The other chemical space layer.
-            radius (float, optional): The radius within which to search for neighbors. Defaults to 0.6.
-            min_neighbors (int, optional): The minimum number of neighbors required for a point in `other`
+            radius (float, optional): The radius within which to search for neighbors.
+                Defaults to 0.6.
+            min_neighbors (int, optional): The minimum number of neighbors required
+                for a point in `other`
 
         Returns:
             T: A new chemical space layer with points removed.

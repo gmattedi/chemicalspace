@@ -20,8 +20,8 @@ from numpy.typing import NDArray
 from rdkit.Chem import Mol  # type: ignore
 from typing_extensions import TypeAlias
 
-from .base import ChemicalSpaceBaseLayer
-from .utils import SEED, reduce_sum, hash_mol
+from chemicalspace.utils import SEED, hash_mol
+from .base import ChemicalSpaceBaseLayer, T
 
 ClusteringMethodsType: TypeAlias = Literal[
     "kmedoids", "agglomerative-clustering", "sphere-exclusion", "scaffold"
@@ -36,8 +36,9 @@ CLUSTERING_METHODS_N: Tuple[str, ...] = get_args(ClusteringMethodsTypeN)
 
 class BaseClusteringX(ABC):
     """
-    BaseClusteringMethod is an abstract class that defines the interface for clustering methods
-    that take in an array of features and return an array of cluster labels.
+    BaseClusteringMethod is an abstract class that defines the
+    interface for clustering methods that take in an array of features and return an
+    array of cluster labels.
     """
 
     @abstractmethod
@@ -56,8 +57,9 @@ class BaseClusteringX(ABC):
 
 class BaseClusteringMols(ABC):
     """
-    BaseClusteringMols is an abstract class that defines the interface for clustering methods
-    that take in an array of RDKit molecules and return an array of cluster labels.
+    BaseClusteringMols is an abstract class that defines the
+    interface for clustering methods that take in an array of RDKit molecules and
+    return an array of cluster labels.
     """
 
     @abstractmethod
@@ -90,10 +92,13 @@ def get_optimal_cluster_number(
         features (ndarray): The input features for clustering.
         model (Any): The clustering model to use. Must be instantiable,
             have a `n_clusters` parameter, and a `fit_predict` method.
-        min_clusters (int, optional): The minimum number of clusters to consider. Defaults to 2.
+        min_clusters (int, optional): The minimum number of clusters to consider.
+            Defaults to 2.
         max_clusters (int, optional): The maximum number of clusters to consider.
-        metric (str, optional): The metric to use for silhouette score. Defaults to "jaccard".
-        n_runs (int, optional): The number of runs to average the silhouette score. Defaults to 10.
+        metric (str, optional): The metric to use for silhouette score.
+            Defaults to "jaccard".
+        n_runs (int, optional): The number of runs to average the silhouette score.
+            Defaults to 10.
 
     Returns:
         int: The optimal number of clusters.
@@ -135,8 +140,9 @@ class SphereExclusion(BaseClusteringX):
 
         Args:
             radius (float, optional): The radius of the sphere. Defaults to 0.4.
-            metric (str, optional): The metric to use for clustering. Defaults to "jaccard".
-            **kwargs: Implemented for compatibility with other clustering algorithms. Ignored.
+            metric (str, optional): The metric to use for clustering.
+                Defaults to "jaccard".
+            **kwargs: Implemented for compatibility. Ignored.
         """
         self.radius = radius
         self.metric = metric
@@ -197,8 +203,8 @@ class ScaffoldClustering(BaseClusteringMols):
         Initialize the ScaffoldClustering algorithm.
 
         Args:
-            generic (bool, optional): Whether to use generic scaffolds. Defaults to True.
-            **kwargs: Implemented for compatibility with other clustering algorithms. Ignored.
+            generic (bool, optional): Whether to use generic scaffolds. Defaults to True
+            **kwargs: Implemented for compatibility. Ignored
         """
         self.generic = generic
         _ = kwargs
@@ -270,8 +276,9 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         Perform clustering on the chemical space data.
 
         Args:
-            n_clusters (int | None): The number of clusters to create (Ignored if not used).
-                If None, the number of clusters will be determined by silhouette score
+            n_clusters (int | None): The number of clusters to create
+                (Ignored if not used). If None, the number of clusters will be
+                determined by silhouette score
             method (str): The clustering method to use.
             seed (int, optional): The random seed for reproducibility. Defaults to SEED.
             **kwargs: Additional keyword arguments to pass to the clustering algorithm.
@@ -323,7 +330,8 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         if n_clusters is not None:
             if (n_clusters > 0) and (n_clusters_actual != n_clusters):
                 raise ValueError(
-                    f"Number of clusters ({len(set(labels))}) does not match number of clusters requested ({n_clusters})."
+                    f"Number of clusters ({len(set(labels))}) does not "
+                    f"match number of clusters requested ({n_clusters})."
                 )
 
         return labels
@@ -334,16 +342,17 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         method: ClusteringMethodsType = "kmedoids",
         seed: int = SEED,
         **kwargs,
-    ) -> Generator[ChemicalSpaceBaseLayer, Any, None]:
+    ) -> Generator[T, Any, None]:
         """
         Yields clusters from the chemical space.
 
         Args:
-            n_clusters (int | None): The number of clusters to create. (Ignored if not used).
-                If None, the number of clusters will be determined by silhouette score
-            method (CLUSTERING_METHODS): The clustering method to use.
-            seed (int, optional): The random seed for reproducibility. Defaults to SEED.
-            **kwargs: Additional keyword arguments to be passed to the clustering method.
+            n_clusters (int | None): The number of clusters to create
+                (Ignored if not used). If None, the number of clusters will be
+                determined by silhouette score
+            method (CLUSTERING_METHODS): The clustering method to use
+            seed (int, optional): The random seed for reproducibility. Defaults to SEED
+            **kwargs: Additional keyword arguments to be passed to the clustering method
 
         Yields:
             Generator[ChemicalSpaceBaseLayer, Any, None]: A generator that yields each
@@ -360,7 +369,8 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
 
         if (n_clusters is not None) and (n_cluster_actual != n_clusters):
             raise ValueError(
-                f"Number of clusters ({n_cluster_actual}) does not match number of clusters requested ({n_clusters})."
+                f"Number of clusters ({n_cluster_actual}) does not match number "
+                f"of clusters requested ({n_clusters})."
             )
 
         for i in range(n_cluster_actual):
@@ -373,46 +383,41 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         method: ClusteringMethodsType = "kmedoids",
         seed: int = SEED,
         **kwargs,
-    ) -> Generator[
-        Tuple["ChemicalSpaceBaseLayer", "ChemicalSpaceBaseLayer"], None, None
-    ]:
+    ) -> Generator[Tuple[T, T], None, None]:
         """
         Generate train-test splits based on clustering.
 
         Args:
-            n_splits (Optional[int]): The number of splits to generate, if supported by the clustering method.
+            n_splits (Optional[int]): The number of splits to generate,
+                if supported by the clustering method.
             method (str): The clustering method to use.
             seed (int, optional): The random seed for reproducibility. Defaults to SEED.
             **kwargs: Additional keyword arguments to pass to the clustering algorithm.
 
         Yields:
-            A tuple of ChemicalSpaceBaseLayer objects representing the train and test splits.
+            A tuple of ChemicalSpaceBaseLayer objects representing
+                the train and test splits.
 
         """
-        clusters = list(
-            self.yield_clusters(
-                n_clusters=n_splits,
-                method=method,
-                seed=seed,
-                **kwargs,
-            )
+        labels = self.cluster(
+            n_clusters=n_splits,
+            method=method,
+            seed=seed,
+            **kwargs,
         )
 
-        if (n_splits is not None) and (len(clusters) != n_splits):
+        n_cluster_actual = len(set(labels))
+
+        if (n_splits is not None) and (n_cluster_actual != n_splits):
             raise ValueError(
-                f"Number of clusters ({len(clusters)}) does not match number of splits requested ({n_splits})."
+                f"Number of clusters ({n_cluster_actual}) does not match number of "
+                f"clusters requested ({n_splits})."
             )
 
-        n_splits_actual = len(clusters)
+        n_splits_actual = len(set(labels))
 
         for i in range(n_splits_actual):
-            train_lst: List[ChemicalSpaceBaseLayer] = []
-            test = clusters[i]
-
-            for j in range(n_splits_actual):
-                if j != i:
-                    train_lst.append(clusters[j])
-
-            train: ChemicalSpaceBaseLayer = reduce_sum(*train_lst)
-
+            mask = np.array(labels == i)
+            train: T = self[~mask]
+            test: T = self[mask]
             yield train, test

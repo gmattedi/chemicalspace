@@ -6,8 +6,8 @@ from numpy.typing import NDArray
 from sklearn.metrics import pairwise_distances_chunked, pairwise_distances
 from typing_extensions import Literal, TypeAlias
 
+from chemicalspace.utils import ArrayIntOrFloat, parallel_map
 from .base import ChemicalSpaceBaseLayer
-from .utils import ArrayIntOrFloat, parallel_map
 
 
 def reduce_sum(x, _):
@@ -31,8 +31,10 @@ def internal_distance(
     Args:
         X (Union[NDArray[np.int_], NDArray[np.float_]]): The input data.
         metric (str): The distance metric to use.
-        n_jobs (Optional[int], optional): The number of jobs to run in parallel. Defaults to None.
-        working_memory (Optional[int], optional): The amount of memory to use for the computation. Defaults to None.
+        n_jobs (Optional[int], optional): The number of jobs to run in parallel.
+            Defaults to None.
+        working_memory (Optional[int], optional): The amount of memory to use for
+            the computation. Defaults to None.
 
     Returns:
         float: The average pairwise distance between all points in `X`.
@@ -56,18 +58,21 @@ def vendi_score(
     n_jobs: Optional[int] = None,
 ) -> float:
     """
-    Compute the Vendi score for an array of points, normalized for the number of data points.
+    Compute the Vendi score for an array of points,
+    normalized for the number of data points.
 
     The Vendi score is a diversity evaluation metric for machine learning models.
     It is based on the entropy of the eigenvalues of the pairwise distance matrix.
 
-    From Friedman et al. "The Vendi Score: A Diversity Evaluation Metric for Machine Learning"
+    From Friedman et al.
+    "The Vendi Score: A Diversity Evaluation Metric for Machine Learning"
     https://arxiv.org/abs/2210.02410
 
     Args:
         X (Union[NDArray[np.int_], NDArray[np.float_]]): The input data.
         metric (str): The distance metric to use.
-        n_jobs (Optional[int], optional): The number of jobs to run in parallel. Defaults to None.
+        n_jobs (Optional[int], optional): The number of jobs to run in parallel.
+            Defaults to None.
 
     Returns:
         float: The Vendi score for the input data.
@@ -115,7 +120,8 @@ class ChemicalSpaceDiversityLayer(ChemicalSpaceBaseLayer):
 
         if method not in diversity_methods_dict:
             raise ValueError(
-                f"Unknown diversity method: {method}. Allowed methods: {list(diversity_methods_dict.keys())}"
+                f"Unknown diversity method: {method}. "
+                f"Allowed methods: {list(diversity_methods_dict.keys())}"
             )
 
         return diversity_methods_dict[method](self.features, self.metric, **kwargs)
