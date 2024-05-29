@@ -23,6 +23,18 @@ repos:
           - pyi
         args: [ --fix ]
 
+  - repo: https://github.com/pycqa/flake8
+    rev: 4.0.1
+    hooks:
+      - id: flake8
+        name: flake8
+        language_version: python3.11
+        types_or:
+          - python
+          - pyi
+        # Maxline length 88 and ignore E203
+        args: [ --max-line-length=88, --ignore=E203 ]
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.10.0
     hooks:

@@ -142,7 +142,8 @@ def test_slice_mask_chunk(space: ChemicalSpaceBaseLayer) -> None:
 
     assert isinstance(space_slice, ChemicalSpaceBaseLayer)
     assert len(space_slice) == 5
-    # Check features, but bypass `.features` to check if the array has been assigned when instantiating
+    # Check features, but bypass `.features` to check if the array has
+    # been assigned when instantiating
     assert np.allclose(space_slice._features, space._features[::2])  # type: ignore
 
     mask = [True, False] * 5
@@ -164,8 +165,12 @@ def test_slice_mask_chunk(space: ChemicalSpaceBaseLayer) -> None:
     assert len(space_chunks_lst) == 4
     assert space_chunks_lst_sizes == [3, 3, 3, 1]
     assert space_chunks_lst[0] == space[0:3]
-    assert np.allclose(space_chunks_lst[0]._features, space._features[:3])  # type: ignore
-    assert np.allclose(space_chunks_lst[-1]._features, space._features[-1:])  # type: ignore
+    assert np.allclose(
+        space_chunks_lst[0]._features, space._features[:3]  # type: ignore
+    )
+    assert np.allclose(
+        space_chunks_lst[-1]._features, space._features[-1:]  # type: ignore
+    )
 
 
 def test_attribute_inheritance(space: ChemicalSpaceBaseLayer) -> None:
@@ -253,7 +258,11 @@ def test_dual_operations(
     space_add: ChemicalSpaceBaseLayer = space.copy()
     space_add.add(mol=other_space.mols[0], idx=idx)
     assert len(space_add) == len(space) + 1
-    assert np.allclose(space_add._features, np.vstack([space._features, other_space._features[0]]))  # type: ignore
+    if space_add._features is not None:  # placate pyright
+        assert np.allclose(
+            space_add._features,
+            np.vstack([space._features, other_space._features[0]]),  # type: ignore
+        )
 
     combined_spaces = space + other_space
 
@@ -261,12 +270,19 @@ def test_dual_operations(
     assert combined_spaces[0:10] == space
     assert combined_spaces[10:] == other_space
     assert combined_spaces._features is not None
-    assert np.allclose(combined_spaces._features, np.vstack([space._features, other_space._features]))  # type: ignore
+    # Placate pyright
+    if (combined_spaces._features is not None) and (other_space._features is not None):
+        assert np.allclose(
+            combined_spaces._features,
+            np.vstack([space._features, other_space._features]),  # type: ignore
+        )
 
     subtracted_spaces = other_space - space
     assert len(subtracted_spaces) == 10
     assert subtracted_spaces._features is not None
-    assert np.allclose(subtracted_spaces._features, other_space._features[:-5])  # type: ignore
+    assert np.allclose(
+        subtracted_spaces._features, other_space._features[:-5]  # type: ignore
+    )
 
     empty_space = space - space
     assert len(empty_space) == 0

@@ -25,15 +25,18 @@ def project_space(
 
     Args:
         chemical_space (ChemicalSpaceBaseLayer): The chemical space layer to project.
-        n_components (int, optional): The number of components in the lower-dimensional space. Defaults to 2.
+        n_components (int, optional):
+            The number of components in the lower-dimensional space. Defaults to 2.
         method (str, optional): The projection method to use. Defaults to "tsne".
-        metric (str, optional): The metric to use for the projection. Defaults to "jaccard".
+        metric (str, optional): The metric to use for the projection.
+            Defaults to "jaccard".
         seed (int, optional): The random seed for reproducibility. Defaults to SEED.
         n_jobs (int, optional): The number of parallel jobs to run. Defaults to 1.
         **kwargs: Additional keyword arguments to pass to the projection algorithm.
 
     Returns:
-        NDArray[np.float_]: An array of the projected data in the lower-dimensional space.
+        NDArray[np.float_]: An array of the projected data
+            in the lower-dimensional space.
 
     """
     if method == "umap":
@@ -85,11 +88,13 @@ class ChemicalSpaceProjectionLayer(ChemicalSpaceBaseLayer):
         """
         Project the chemical space data to a lower-dimensional space.
         Args:
-            n_components (int, optional): The number of components in the lower-dimensional space. Defaults to 2.
+            n_components (int, optional): The number of components in
+                the lower-dimensional space. Defaults to 2.
             method (str, optional): The projection method to use. Defaults to "tsne".
             seed (int, optional): The random seed for reproducibility. Defaults to 42.
             n_jobs (int, optional): The number of parallel jobs to run. Defaults to -1.
-            **method_kwargs: Additional keyword arguments to pass to the projection algorithm.
+            **method_kwargs: Additional keyword arguments to pass
+                to the projection algorithm.
 
         Returns:
 
