@@ -10,18 +10,17 @@ from typing import (
     Optional,
     Sequence,
     Type,
-    TypeAlias,
     TypeVar,
+    Union,
 )
 
 import numpy as np
 from numpy.typing import NDArray
 from rdkit import Chem
 from rdkit.Chem import Mol  # type: ignore
+from typing_extensions import TypeAlias
 
-from chemicalspace.layers import utils
-
-from .utils import (
+from chemicalspace.utils import (
     MaybeIndex,
     MaybeScore,
     MolFeaturizerType,
@@ -32,8 +31,10 @@ from .utils import (
     parallel_map,
 )
 
+from .. import utils
+
 T = TypeVar("T", bound="ChemicalSpaceBaseLayer")
-ScoreArray: TypeAlias = NDArray[np.int_] | NDArray[np.float_] | NDArray[np.bool_]
+ScoreArray: TypeAlias = Union[NDArray[np.int_], NDArray[np.float_], NDArray[np.bool_]]
 
 
 class ChemicalSpaceBaseLayer(ABC):
@@ -57,13 +58,22 @@ class ChemicalSpaceBaseLayer(ABC):
         Initializes a ChemicalSpace object.
 
         Args:
-            mols (Sequence[Mol | str]): A sequence of RDKit Mol objects or SMILES strings.
-            indices (Optional[Sequence[Any]], optional): A sequence of indices for the molecules. Defaults to None.
-            scores (Optional[Sequence[Number]], optional): A sequence of scores for the molecules. Defaults to None.
-            featurizer (MolFeaturizerType, optional): The featurizer to use for the molecules. Defaults to utils.ecfp4_featurizer.
-            metric (str, optional): The sklearn/scipy metric to use for the featurizer. Defaults to "jaccard".
-            features (Optional[NDArray[Any]], optional): Precomputed features for the molecules. Defaults to None.
-            hash_indices (bool, optional): Whether to include indices in the hash. Defaults to False.
+            mols (Sequence[Mol | str]):
+                A sequence of RDKit Mol objectsr SMILES strings.
+            indices (Optional[Sequence[Any]], optional):
+                A sequence of indices for the molecules. Defaults to None.
+            scores (Optional[Sequence[Number]], optional):
+                A sequence of scores for the molecules. Defaults to None.
+            featurizer (MolFeaturizerType, optional):
+                The featurizer to use for the molecules.
+                Defaults to utils.ecfp4_featurizer.
+            metric (str, optional):
+                The sklearn/scipy metric to use for the featurizer.
+                Defaults to "jaccard".
+            features (Optional[NDArray[Any]], optional):
+                Precomputed features for the molecules. Defaults to None.
+            hash_indices (bool, optional):
+                Whether to include indices in the hash. Defaults to False.
             n_jobs (int, optional): The number of parallel jobs to run. Defaults to 1.
 
 
@@ -73,10 +83,11 @@ class ChemicalSpaceBaseLayer(ABC):
         """
         mols_m = np.array((parallel_map(utils.safe_smiles2mol, mols, n_jobs=n_jobs)))
         self.mols: NDArray[Mol] = np.array(mols_m)
-        self.indices: NDArray[Any] | None = (
+
+        self.indices: Union[NDArray[Any], None] = (
             np.array(indices) if indices is not None else None
         )
-        self.scores: ScoreArray | None = (
+        self.scores: Union[ScoreArray, None] = (
             np.array(scores) if scores is not None else None
         )
         self.n_jobs = n_jobs
@@ -91,7 +102,7 @@ class ChemicalSpaceBaseLayer(ABC):
         if (features is not None) and (len(features) != len(self.mols)):
             raise ValueError("Number of features must match number of molecules")
 
-        self._features: NDArray[Any] | None = features
+        self._features: Union[NDArray[Any], None] = features
 
         self.name = self.__class__.__name__
 
@@ -102,9 +113,11 @@ class ChemicalSpaceBaseLayer(ABC):
         Adds a molecule to the chemical space.
 
         Args:
-            mol (MolOrSmiles): The molecule to be added. It can be either a Mol object or a SMILES string.
+            mol (MolOrSmiles): The molecule to be added.
+                It can be either a Mol object or a SMILES string.
             idx (MaybeIndex, optional): The index of the molecule. Defaults to None.
-            score (MaybeScore, optional): The score associated with the molecule. Defaults to None.
+            score (MaybeScore, optional): The score associated with the molecule.
+                Defaults to None.
 
         Raises:
             ValueError: If scores are enabled and score is not provided.
@@ -139,7 +152,8 @@ class ChemicalSpaceBaseLayer(ABC):
             chunk_size (int): The size of each chunk.
 
         Yields:
-            Generator[ChemicalSpaceBaseLayer, None, None]: A generator of ChemicalSpaceBaseLayer objects.
+            Generator[ChemicalSpaceBaseLayer, None, None]:
+                A generator of ChemicalSpaceBaseLayer objects.
         """
         for i in range(0, len(self), chunk_size):
             yield self[i : i + chunk_size]
@@ -179,8 +193,10 @@ class ChemicalSpaceBaseLayer(ABC):
                 if self._features is not None:
                     features_idx.append(i)
 
-        idx: List[Any] | None = idx_lst if self.indices is not None else None
-        scores: List[Number] | None = scores_lst if self.scores is not None else None
+        idx: Union[List[Any], None] = idx_lst if self.indices is not None else None
+        scores: Union[List[Number], None] = (
+            scores_lst if self.scores is not None else None
+        )
 
         if self._features is not None:
             features = self._features[features_idx]
@@ -221,7 +237,8 @@ class ChemicalSpaceBaseLayer(ABC):
             kwargs (Any): Additional keyword arguments to pass to the constructor.
 
         Returns:
-            ChemicalSpaceBaseLayer: A ChemicalSpaceBaseLayer object created from the SMILES strings.
+            ChemicalSpaceBaseLayer: A ChemicalSpaceBaseLayer object
+                created from the SMILES strings.
 
         """
 
@@ -258,12 +275,15 @@ class ChemicalSpaceBaseLayer(ABC):
 
         Args:
             path (str): The path to the SDF file. Can be gzipped.
-            scores_prop (Optional[str]): The property name in the SDF file that contains the scores. Default is None.
-            cast_to (Callable[[Any], Any]): The function to cast the scores to. Default is `float`.
+            scores_prop (Optional[str]): The property name in the SDF file
+                that contains the scores. Default is None.
+            cast_to (Callable[[Any], Any]): The function to cast the scores to.
+                Default is `float`.
             kwargs (Any): Additional keyword arguments to pass to the constructor.
 
         Returns:
-            ChemicalSpaceBaseLayer: The ChemicalSpaceBaseLayer object created from the SDF file.
+            ChemicalSpaceBaseLayer: The ChemicalSpaceBaseLayer object
+                created from the SDF file.
 
         """
         supplier = utils.sdf_supplier(path)
@@ -320,7 +340,8 @@ class ChemicalSpaceBaseLayer(ABC):
 
         Args:
             path (str): The path to the output file. Can be gzipped.
-            scores_prop (Optional[str]): The property name to use for the scores. Default is None.
+            scores_prop (Optional[str]): The property name to use for the scores.
+                Default is None.
 
         Returns:
             None
@@ -357,11 +378,11 @@ class ChemicalSpaceBaseLayer(ABC):
         """
         Adds two ChemicalSpaceBaseLayer objects together.
 
-        Args:
-            other (ChemicalSpaceBaseLayer): The other ChemicalSpaceBaseLayer object to add.
+        Args: other (ChemicalSpaceBaseLayer): The other ChemicalSpaceBaseLayer object
+            to add.
 
-        Returns:
-            ChemicalSpaceBaseLayer: A new ChemicalSpaceBaseLayer object that is the result of the addition.
+        Returns: ChemicalSpaceBaseLayer: A new ChemicalSpaceBaseLayer object that is
+            the result of the addition.
 
         Raises:
             TypeError: If the other object is not an instance of ChemicalSpaceBaseLayer.
@@ -373,7 +394,8 @@ class ChemicalSpaceBaseLayer(ABC):
         if (self.indices is None) or (other.indices is None):
             if (self.indices is None) != (other.indices is None):
                 warnings.warn(
-                    "Both spaces should have indices to concatenate. Indices will be None"
+                    "Both spaces should have indices to concatenate. "
+                    "Indices will be None"
                 )
             idx = None
         else:
@@ -410,11 +432,13 @@ class ChemicalSpaceBaseLayer(ABC):
         Subtract another ChemicalSpaceBaseLayer object from the current object.
 
         Args:
-            other (ChemicalSpaceBaseLayer): The ChemicalSpaceBaseLayer object to subtract.
+            other (ChemicalSpaceBaseLayer):
+                The ChemicalSpaceBaseLayer object to subtract.
 
         Returns:
-            ChemicalSpaceBaseLayer: A new ChemicalSpaceBaseLayer object that contains the molecules
-            from the current object that are not present in the other object.
+            ChemicalSpaceBaseLayer: A new ChemicalSpaceBaseLayer object
+                that contains the molecules from the current object that are not
+                present in the other object.
 
         Raises:
             TypeError: If the other object is not an instance of ChemicalSpaceBaseLayer.
@@ -432,7 +456,7 @@ class ChemicalSpaceBaseLayer(ABC):
         mols_hashes = parallel_map(utils.hash_mol, self.mols, n_jobs=self.n_jobs)
 
         for i in range(len(self)):
-            mol = self.mols[i]
+            mol: Mol = self.mols[i]
             mol_hash = mols_hashes[i]
 
             if mol_hash in cache:
@@ -446,8 +470,10 @@ class ChemicalSpaceBaseLayer(ABC):
                 if self._features is not None:
                     features_idx.append(i)
 
-        idx: List[Any] | None = indices_lst if self.indices is not None else None
-        scores: List[Number] | None = scores_lst if self.scores is not None else None
+        idx: Union[List[Any], None] = indices_lst if self.indices is not None else None
+        scores: Union[List[Number], None] = (
+            scores_lst if self.scores is not None else None
+        )
         features = self._features[features_idx] if self._features is not None else None
 
         return factory(
@@ -462,7 +488,7 @@ class ChemicalSpaceBaseLayer(ABC):
         )
 
     def __getitem__(
-        self, idx: int | SliceType | NDArray[np.bool_] | List[bool] | List[int]
+        self, idx: Union[int, SliceType, NDArray[np.bool_], List[bool], List[int]]
     ) -> T:  # type: ignore
         """
         Retrieve the item(s) at the specified index or slice.
@@ -471,7 +497,8 @@ class ChemicalSpaceBaseLayer(ABC):
             idx: The index, slice, mask, or list of indices to retrieve.
 
         Returns:
-            ChemicalSpaceBaseLayer: A new ChemicalSpaceBaseLayer object containing the item(s) at the specified index or slice.
+            ChemicalSpaceBaseLayer: A new ChemicalSpaceBaseLayer object
+                containing the item(s) at the specified index or slice.
         """
 
         if isinstance(idx, int):
@@ -513,7 +540,8 @@ class ChemicalSpaceBaseLayer(ABC):
         Create a copy of the object.
 
         Args:
-            deep (bool): If True, perform a deep copy of the object. If False, perform a shallow copy.
+            deep (bool): If True, perform a deep copy of the object.
+                If False, perform a shallow copy.
 
         Returns:
             T: A copy of the object.
@@ -577,7 +605,10 @@ class ChemicalSpaceBaseLayer(ABC):
     def __repr__(self) -> str:
         idx_repr = len(self.indices) if self.indices is not None else "No"
         scores_repr = len(self.scores) if self.scores is not None else "No"
-        return f"<{self.name}: {len(self)} molecules | {idx_repr} indices | {scores_repr} scores>"
+        return (
+            f"<{self.name}: {len(self)} molecules "
+            f"| {idx_repr} indices | {scores_repr} scores>"
+        )
 
     def __str__(self) -> str:
         return self.__repr__()

@@ -1,4 +1,4 @@
-![coverage](.badges/coverage.svg)&nbsp;&nbsp; 
+![coverage](.badges/coverage.svg)&nbsp;&nbsp;
 ![tests](.badges/tests.svg)
 
 # ChemicalSpace
@@ -74,7 +74,6 @@ print(space)
 Indexing, slicing and masking a `ChemicalSpace` object returns a new `ChemicalSpace` object.
 
 #### Indexing
-
 
 ```python
 from chemicalspace import ChemicalSpace
@@ -204,7 +203,7 @@ return value should be castable to NumPy array (see `chemicalspace.utils.MolFeat
 
 ```python
 from chemicalspace import ChemicalSpace
-from chemicalspace.layers.utils import maccs_featurizer
+from chemicalspace.utils import maccs_featurizer
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi", featurizer=maccs_featurizer)
 space_slice = space[:6:2]
@@ -375,7 +374,10 @@ assert id(space.mols[0]) != id(space_deepcopy.mols[0])
 ### Labels
 
 A `ChemicalSpace` can be clustered using by its molecular features.
-`kmedoids` and `agglomerative-clustering` are the available clustering methods.
+`kmedoids`, `agglomerative-clustering`, `sphere-exclusion` and `scaffold`
+are the available clustering methods.
+Refer to the respective methods in [`chemicalspace.layers.clustering`](chemicalspace/layers/clustering.py)
+for more details.
 
 ```python
 from chemicalspace import ChemicalSpace
@@ -412,7 +414,7 @@ for cluster in clusters:
 
 ### KFold Clustering
 
-`ChemicalSpace.ksplits` can be used to iterate train/test cluster splits for ML training.
+`ChemicalSpace.splits` can be used to iterate train/test cluster splits for ML training.
 At each iteration, one cluster is used as the test set and the rest as the training set.
 Note that there is no guarantee on the size of the clusters.
 
@@ -421,7 +423,7 @@ from chemicalspace import ChemicalSpace
 
 space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
 
-for train, test in space.ksplits(n_splits=3):
+for train, test in space.split(n_splits=3):
     print(train, test)
 ```
 

@@ -8,7 +8,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    TypeAlias,
     Union,
 )
 
@@ -17,17 +16,18 @@ from joblib import Parallel, delayed
 from numpy.typing import NDArray
 from rdkit import Chem
 from rdkit.Chem import AllChem, Mol, inchi  # type: ignore
+from typing_extensions import TypeAlias
 
 Number: TypeAlias = Union[int, float]
 MaybeIndex: TypeAlias = Union[Any, None]
 MaybeScore: TypeAlias = Union[Number, None]
 MolOrSmiles: TypeAlias = Union[Mol, str]
-IntOrNone: TypeAlias = int | None
+IntOrNone: TypeAlias = Union[int, None]
 SliceType: TypeAlias = slice
 MolFeaturizerType: TypeAlias = Callable[
     [Mol], Union[Sequence[Number], NDArray[np.int_], NDArray[np.float_]]
 ]
-ArrayIntOrFloat: TypeAlias = NDArray[np.int_] | NDArray[np.float_]
+ArrayIntOrFloat: TypeAlias = Union[NDArray[np.int_], NDArray[np.float_]]
 
 
 SEED: int = 42
@@ -128,7 +128,8 @@ def safe_smiles2mol(smiles_or_mol: MolOrSmiles) -> Mol:
 def factory(cls, **kwargs) -> Any:
     """
     Create a new instance of the given class with the provided arguments.
-    Any missing arguments to the __init__ in kwargs will be filled with the class attributes.
+    Any missing arguments to the __init__ in kwargs will be filled with the
+    class attributes.
 
     Args:
         cls: The class object to create a new instance of.
@@ -177,19 +178,22 @@ def parallel_map(
 
     Args:
         func (Callable): The function to apply to each item.
-        iterable (Iterable[Any]): The iterable containing the items to apply the function to.
+        iterable (Iterable[Any]): The iterable containing the
+            items to apply the function to.
         n_jobs (int, optional): The number of processes to use for parallel execution.
             Defaults to -1, which uses all available processors.
 
     Returns:
-        List[Any]: A list containing the results of applying the function to each item in the iterable.
+        List[Any]: A list containing the results of applying the function
+            to each item in the iterable.
     """
     return list(Parallel(n_jobs=n_jobs)(delayed(func)(item) for item in iterable))
 
 
 def smi_supplier(path: str) -> Generator[Mol, None, None]:
     """
-    Generator function that reads a file containing SMILES strings and yields RDKit molecules.
+    Generator function that reads a file containing SMILES strings and
+    yields RDKit molecules.
 
     Args:
         path (str): The path to the file containing SMILES strings.
@@ -229,10 +233,11 @@ def smi_writer(
     Write a list of RDKit molecules to a file in SMILES format.
 
     Args:
-        path (str): The path to the output file. Can be a .smi, .smiles, or .smi.gz file.
-        mols (Iterable[Mol]): The list of RDKit molecules to write to the file.
-        names (Optional[Sequence[Any]], optional): The names of the molecules.
-            If None, the names are taken from the RDKit molecule properties. Defaults to None.
+        path (str): The path to the output file. Can be a .smi, .smiles, or .smi.gz file
+        mols (Iterable[Mol]): The list of RDKit molecules to write to the file
+        names (Optional[Sequence[Any]], optional): The names of the molecules
+            If None, the names are taken from the RDKit molecule properties.
+            Defaults to None
     """
 
     if path.lower().endswith("gz"):
@@ -259,7 +264,8 @@ def sdf_supplier(path: str, **kwargs) -> Generator[Mol, None, None]:
 
     Args:
         path (str): The path to the SDF file. Can be a .sdf or .sdf.gz file.
-        **kwargs: Additional keyword arguments to be passed to the RDKit ForwardSDMolSupplier.
+        **kwargs: Additional keyword arguments to be passed
+            to the RDKit ForwardSDMolSupplier.
 
     Yields:
         Chem.Mol: RDKit molecule object.
@@ -305,7 +311,7 @@ def sdf_writer(path: str, mols: Iterable[Mol], **kwargs) -> None:
         writer.write(mol)
 
     # Somehow necessary to flush the writer for pytest to work
-    writer.flush()
+    writer.flush()  # type: ignore
     f.flush()
 
     f.close()
