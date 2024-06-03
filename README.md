@@ -9,11 +9,11 @@ An Object-Oriented Representation for Chemical Spaces
 representation for chemical spaces. It is designed to be used in conjunction
 with the `RDKit` package, which provides the underlying cheminformatics functionality.
 
-While in the awesome `RDKit`, the main frame of reference is that of single molecules, here the main focus is on the representation of chemical spaces.
+While in the awesome `RDKit`, the main frame of reference is that of single molecules, here the main focus is on operations on chemical spaces.
 
 ## Installation
 
-To install `chemicalspace`, you can use `pip`:
+To install `chemicalspace` you can use `pip`:
 
 ```bash
 pip install chemicalspace
@@ -596,6 +596,30 @@ print(diversity_vendi_redundant)
 0.1
 ```
 
+# Advanced
+
+## Layers
+
+`ChemicalSpace` is implemented as a series of *layers* that provide the functionality of the class. As can be seen in the [source code](chemicalspace/space.py), the class simply combines the layers.
+
+If only a subset of the functionality of `ChemicalSpace` is necessary, and lean objects are a priority, one can combine only the required layers:
+
+```python
+from chemicalspace.layers.clustering import ChemicalSpaceClusteringLayer
+from chemicalspace.layers.neighbors import ChemicalSpaceNeighborsLayer
+
+
+class MyCustomSpace(ChemicalSpaceClusteringLayer, ChemicalSpaceNeighborsLayer):
+    pass
+
+
+space = MyCustomSpace(mols=["c1ccccc1"])
+space
+```
+```text
+<MyCustomSpace: 1 molecules | No indices | No scores>
+```
+
 # Development
 
 ## Installation
@@ -613,3 +637,12 @@ Install the hooks with:
 
 ```bash
 pre-commit install
+```
+
+## Documentation
+
+The documentation can be built by running:
+```bash
+cd docs
+./rebuild.sh
+```
