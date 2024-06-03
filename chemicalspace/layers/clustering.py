@@ -342,7 +342,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
         method: ClusteringMethodsType = "kmedoids",
         seed: int = SEED,
         **kwargs,
-    ) -> Generator[T, Any, None]:
+    ) -> Generator[T, Any, None]:  # type: ignore
         """
         Yields clusters from the chemical space.
 
