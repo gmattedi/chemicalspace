@@ -32,6 +32,7 @@ classifiers = [
 
 [project.urls]
 "Homepage" = "https://github.com/gmattedi/chemicalspace"
+"Issues" = "https://github.com/gmattedi/chemicalspace/issues"
 
 [tool.setuptools]
 packages = ["chemicalspace"]
