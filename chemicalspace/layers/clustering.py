@@ -220,7 +220,7 @@ class ScaffoldClustering(BaseClusteringMols):
         Returns:
 
         """
-        from rdkit.Chem.Scaffolds import MurckoScaffold
+        from rdkit.Chem.Scaffolds import MurckoScaffold  # type: ignore
 
         _ = kwargs  # discard
 
