@@ -7,3 +7,4 @@ pytest~=8.2.0
 pyright~=1.1.325
 sphinx~=7.3.7
 sphinx-rtd-theme~=2.0.0
+twine~=5.1.0
