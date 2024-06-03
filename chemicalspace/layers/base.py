@@ -342,11 +342,7 @@ class ChemicalSpaceBaseLayer(ABC):
                 scores_lst.append(cast_to(mol.GetProp(scores_prop)))
 
         if scores_prop is not None:
-            return cls(
-                mols=mols_lst,
-                indices=indices_lst,
-                scores=scores_lst,
-            )
+            return cls(mols=mols_lst, indices=indices_lst, scores=scores_lst, **kwargs)
         else:
             return cls(
                 mols=mols_lst,
