@@ -35,7 +35,7 @@ classifiers = [
 "Issues" = "https://github.com/gmattedi/chemicalspace/issues"
 
 [tool.setuptools]
-packages = ["chemicalspace"]
+packages = ["chemicalspace", "chemicalspace.layers"]
 
 [tool.setuptools.dynamic]
 version = {attr = "chemicalspace.__version__"}
