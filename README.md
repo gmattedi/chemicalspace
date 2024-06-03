@@ -9,12 +9,14 @@ An Object-Oriented Representation for Chemical Spaces
 representation for chemical spaces. It is designed to be used in conjunction
 with the `RDKit` package, which provides the underlying cheminformatics functionality.
 
+While in the awesome `RDKit`, the main frame of reference is that of single molecules, here the main focus is on the representation of chemical spaces.
+
 ## Installation
 
 To install `chemicalspace`, you can use `pip`:
 
 ```bash
-pip install .
+pip install chemicalspace
 ```
 
 # Usage
@@ -169,6 +171,18 @@ for chunk in chunks:
 <ChemicalSpace: 3 molecules | 3 indices | No scores>
 <ChemicalSpace: 1 molecules | 1 indices | No scores>
 ```
+
+### Drawing
+
+A `ChemicalSpace` object can be rendered as a grid of molecules.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space.draw()
+```
+![draw](.media/sample.png)
 
 ### Featurizing
 

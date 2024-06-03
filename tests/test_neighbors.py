@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from chemicalspace.layers.neigbors import ChemicalSpaceNeighborsLayer
+from chemicalspace.layers.neighbors import ChemicalSpaceNeighborsLayer
 
 np.random.seed(42)
 

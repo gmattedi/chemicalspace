@@ -3,14 +3,14 @@ from abc import ABC, abstractmethod
 from functools import lru_cache, partial
 from typing import (
     Any,
+    Dict,
     Generator,
     List,
     Literal,
     Optional,
-    Tuple,
-    Set,
     Sequence,
-    Dict,
+    Set,
+    Tuple,
     Union,
     get_args,
 )
@@ -21,6 +21,7 @@ from rdkit.Chem import Mol  # type: ignore
 from typing_extensions import TypeAlias
 
 from chemicalspace.utils import SEED, hash_mol
+
 from .base import ChemicalSpaceBaseLayer, T
 
 ClusteringMethodsType: TypeAlias = Literal[
@@ -209,7 +210,9 @@ class ScaffoldClustering(BaseClusteringMols):
         self.generic = generic
         _ = kwargs
 
-    def fit_predict(self, mols: Union[Sequence[Mol], NDArray[Mol]], **kwargs):
+    def fit_predict(
+        self, mols: Union[Sequence[Mol], NDArray[Mol]], **kwargs  # type: ignore
+    ) -> NDArray[np.int_]:
         """
         Perform clustering on the input data.
 
@@ -218,6 +221,7 @@ class ScaffoldClustering(BaseClusteringMols):
             **kwargs: Additional keyword arguments. Ignored.
 
         Returns:
+            NDArray[int]: Cluster labels
 
         """
         from rdkit.Chem.Scaffolds import MurckoScaffold  # type: ignore
