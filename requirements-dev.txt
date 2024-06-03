@@ -1,6 +1,9 @@
 coverage~=7.5.1
 ipykernel==6.29.4
 matplotlib~=3.9.0
+myst-parser~=3.0.1
 pre-commit~=3.7.1
 pytest~=8.2.0
 pyright~=1.1.325
+sphinx~=7.3.7
+sphinx-rtd-theme~=2.0.0

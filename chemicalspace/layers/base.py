@@ -217,7 +217,7 @@ class ChemicalSpaceBaseLayer(ABC):
         Calculate the features for each molecule in the chemical space.
 
         Returns:
-            NDArray[np.int_]: An array of features for each molecule.
+            NDArray[int]: An array of features for each molecule.
         """
         if self._features is None:
             self._features = np.array(

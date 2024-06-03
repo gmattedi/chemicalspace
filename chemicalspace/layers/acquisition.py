@@ -199,7 +199,7 @@ def pick_samples(
             to pass to the acquisition strategy.
 
     Returns:
-        NDArray[np.int_]: Array of indices of the picked samples.
+        NDArray[int]: Array of indices of the picked samples.
 
     """
     if strategy not in strategies_dict:

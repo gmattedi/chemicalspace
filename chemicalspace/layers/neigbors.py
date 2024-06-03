@@ -28,7 +28,7 @@ def _find_overlap(
             Defaults to "jaccard".
 
     Returns:
-        NDArray[np.int_]: The indices of points in `cs2` that have at least
+        NDArray[int]: The indices of points in `cs2` that have at least
             `min_neighbors` neighbors in `cs1`.
     """
 
@@ -63,7 +63,7 @@ class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
                 The minimum number of neighbors required for a point
 
         Returns:
-            NDArray[np.int_]: The indices of points in `self` that have at least
+            NDArray[int]: The indices of points in `self` that have at least
                 `min_neighbors` neighbors.
 
         """
@@ -85,15 +85,13 @@ class ChemicalSpaceNeighborsLayer(ChemicalSpaceBaseLayer):
                 for a point in `other`
 
         Returns:
-            NDArray[np.int_]: The indices of points in `self` that have at least
+            NDArray[int]: The indices of points in `self` that have at least
                 `min_neighbors` neighbors in `other`.
 
         """
         return _find_overlap(other, self, radius, min_neighbors, metric=self.metric)
 
-    def carve(
-        self, other: T, radius: float = 0.6, min_neighbors: int = 1
-    ) -> T:  # type: ignore
+    def carve(self, other: T, radius: float = 0.6, min_neighbors: int = 1) -> T:
         """
         Remove points from `self` that have at least `min_neighbors` neighbors in
         `other` within a given `radius` similarity threshold.

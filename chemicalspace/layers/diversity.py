@@ -29,7 +29,7 @@ def internal_distance(
     See `sklearn.metrics.pairwise_distances_chunked` for more details.
 
     Args:
-        X (Union[NDArray[np.int_], NDArray[np.float_]]): The input data.
+        X (Union[NDArray[int], NDArray[float]]): The input data.
         metric (str): The distance metric to use.
         n_jobs (Optional[int], optional): The number of jobs to run in parallel.
             Defaults to None.
@@ -69,7 +69,7 @@ def vendi_score(
     https://arxiv.org/abs/2210.02410
 
     Args:
-        X (Union[NDArray[np.int_], NDArray[np.float_]]): The input data.
+        X (Union[NDArray[int], NDArray[float]]): The input data.
         metric (str): The distance metric to use.
         n_jobs (Optional[int], optional): The number of jobs to run in parallel.
             Defaults to None.

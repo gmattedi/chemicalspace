@@ -162,5 +162,7 @@ cython_debug/
 .vscode
 
 ./*.ipynb
-*.rst
+/docs/source/_build
+/docs/source/chemicalspace*
+/docs/source/modules.rst
 .*_cache

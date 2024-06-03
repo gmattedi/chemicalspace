@@ -50,7 +50,7 @@ class BaseClusteringX(ABC):
             X (ndarray): The input data to cluster.
 
         Returns:
-            NDArray[np.int_]: An array of cluster labels for each point.
+            NDArray[int]: An array of cluster labels for each point.
         """
         raise NotImplementedError
 
@@ -72,7 +72,7 @@ class BaseClusteringMols(ABC):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            NDArray[np.int_]: An array of cluster labels for each molecule.
+            NDArray[int]: An array of cluster labels for each molecule.
         """
         raise NotImplementedError
 
@@ -156,7 +156,7 @@ class SphereExclusion(BaseClusteringX):
             X (ndarray): The input data to cluster.
 
         Returns:
-            NDArray[np.int_]: An array of cluster labels for each point.
+            NDArray[int]: An array of cluster labels for each point.
         """
 
         from sklearn.neighbors import BallTree
@@ -284,7 +284,7 @@ class ChemicalSpaceClusteringLayer(ChemicalSpaceBaseLayer):
             **kwargs: Additional keyword arguments to pass to the clustering algorithm.
 
         Returns:
-            NDArray[np.int_]: An array of cluster labels for each molecule.
+            NDArray[int]: An array of cluster labels for each molecule.
 
         """
         if method == "kmedoids":

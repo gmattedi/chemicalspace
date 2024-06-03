@@ -6,6 +6,7 @@ from numpy.typing import NDArray
 from typing_extensions import TypeAlias
 
 from chemicalspace.utils import SEED
+
 from .base import ChemicalSpaceBaseLayer
 
 PROJECTION_METHODS: TypeAlias = Literal["umap", "tsne", "pca"]
@@ -35,7 +36,7 @@ def project_space(
         **kwargs: Additional keyword arguments to pass to the projection algorithm.
 
     Returns:
-        NDArray[np.float_]: An array of the projected data
+        NDArray[float]: An array of the projected data
             in the lower-dimensional space.
 
     """
@@ -87,6 +88,7 @@ class ChemicalSpaceProjectionLayer(ChemicalSpaceBaseLayer):
     ) -> NDArray[np.float_]:
         """
         Project the chemical space data to a lower-dimensional space.
+
         Args:
             n_components (int, optional): The number of components in
                 the lower-dimensional space. Defaults to 2.
@@ -97,6 +99,7 @@ class ChemicalSpaceProjectionLayer(ChemicalSpaceBaseLayer):
                 to the projection algorithm.
 
         Returns:
+            NDArray[float]: The projeciton of the space
 
         """
         return project_space(
