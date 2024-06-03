@@ -3,6 +3,7 @@ from abc import ABC
 from functools import cached_property
 from typing import (
     Any,
+    Callable,
     Dict,
     Generator,
     List,
@@ -246,7 +247,11 @@ class ChemicalSpaceBaseLayer(ABC):
 
     @classmethod
     def from_sdf(
-        cls: Type[T], path: str, scores_prop: Optional[str] = None, **kwargs
+        cls: Type[T],
+        path: str,
+        scores_prop: Optional[str] = None,
+        cast_to: Callable[[Any], Any] = float,
+        **kwargs,
     ) -> T:
         """
         Create a ChemicalSpaceBaseLayer object from an SDF file.
@@ -254,6 +259,7 @@ class ChemicalSpaceBaseLayer(ABC):
         Args:
             path (str): The path to the SDF file. Can be gzipped.
             scores_prop (Optional[str]): The property name in the SDF file that contains the scores. Default is None.
+            cast_to (Callable[[Any], Any]): The function to cast the scores to. Default is `float`.
             kwargs (Any): Additional keyword arguments to pass to the constructor.
 
         Returns:
@@ -275,7 +281,7 @@ class ChemicalSpaceBaseLayer(ABC):
             indices_lst.append(mol.GetProp("_Name"))
 
             if scores_prop is not None:
-                scores_lst.append(float(mol.GetProp(scores_prop)))
+                scores_lst.append(cast_to(mol.GetProp(scores_prop)))
 
         if scores_prop is not None:
             return cls(
