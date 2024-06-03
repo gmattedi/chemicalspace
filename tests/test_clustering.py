@@ -1,15 +1,15 @@
 import os
-from typing import Optional
+from typing import Generator, Optional, Tuple
 
 import numpy as np
 import pytest
 
 from chemicalspace.layers.clustering import (
-    ClusteringMethodsType,
-    ClusteringMethodsTypeN,
     CLUSTERING_METHODS,
     CLUSTERING_METHODS_N,
     ChemicalSpaceClusteringLayer,
+    ClusteringMethodsType,
+    ClusteringMethodsTypeN,
     get_optimal_cluster_number,
 )
 
@@ -88,7 +88,9 @@ def test_yield_clusters_n(
     method: ClusteringMethodsTypeN,
     n_clusters: Optional[int],
 ) -> None:
-    clusters = space.yield_clusters(n_clusters=n_clusters, method=method, seed=42)
+    clusters: Generator[ChemicalSpaceClusteringLayer, None, None] = (
+        space.yield_clusters(n_clusters=n_clusters, method=method, seed=42)
+    )
 
     i = None
     for i, cluster in enumerate(clusters):
@@ -105,7 +107,9 @@ def test_yield_clusters_n(
 def test_yield_clusters(
     space: ChemicalSpaceClusteringLayer, method: ClusteringMethodsType, kwargs
 ) -> None:
-    clusters = space.yield_clusters(method=method, seed=42, **kwargs)
+    clusters: Generator[ChemicalSpaceClusteringLayer, None, None] = (
+        space.yield_clusters(method=method, seed=42, **kwargs)
+    )
 
     i = None
     for i, cluster in enumerate(clusters):
@@ -123,7 +127,9 @@ def test_split(
     method: ClusteringMethodsTypeN,
     n_clusters: int,
 ) -> None:
-    ks = space.split(n_splits=n_clusters, method=method, seed=42)
+    ks: Generator[
+        Tuple[ChemicalSpaceClusteringLayer, ChemicalSpaceClusteringLayer], None, None
+    ] = space.split(n_splits=n_clusters, method=method, seed=42)
 
     for cluster_train, cluster_test in ks:
 
