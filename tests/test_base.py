@@ -1,15 +1,17 @@
 import os
 from pathlib import Path
 from types import GeneratorType
-from typing import Generator
+from typing import Any, Generator, List, Optional
 
 import numpy as np
 import pytest
+from rdkit import Chem
 from rdkit.Chem.rdchem import Mol
 
 from chemicalspace.layers.base import ChemicalSpaceBaseLayer
 from chemicalspace.utils import (
     MolFeaturizerType,
+    Number,
     ecfp4_featurizer,
     maccs_featurizer,
 )
@@ -23,6 +25,9 @@ INPUT_SDF_FILES = [
     os.path.join(TESTS_DIR, "data", name) for name in ["inputs1.sdf", "inputs2.sdf.gz"]
 ]
 
+test_smiles = ["C", "CC", "CCC", "CCCC", "CCCCC", "CCCCCC", "CCCCCCC"]
+test_mols = [Chem.MolFromSmiles(smi) for smi in test_smiles]  # type: ignore
+
 
 @pytest.fixture
 def space() -> ChemicalSpaceBaseLayer:
@@ -30,8 +35,48 @@ def space() -> ChemicalSpaceBaseLayer:
 
 
 @pytest.fixture
+def space_with_scores() -> ChemicalSpaceBaseLayer:
+    scores = np.array(range(len(INPUT_SMI_FILES[0])))
+    return ChemicalSpaceBaseLayer.from_smi(INPUT_SMI_FILES[0], scores=scores)
+
+
+@pytest.fixture
 def other_space() -> ChemicalSpaceBaseLayer:
     return ChemicalSpaceBaseLayer.from_smi(INPUT_SMI_FILES[1])
+
+
+@pytest.mark.parametrize(
+    "scores", [None, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7], [1, 2, 3, 4, 5, 6, 7]]
+)
+@pytest.mark.parametrize(
+    "indices", [None, ["a", "b", "c", "d", "e", "f", "g"], [1, 2, 3, 4, 5, 6, 7]]
+)
+@pytest.mark.parametrize("smiles_or_mols_lst", [[], test_smiles, test_mols])
+def test_initialization(
+    smiles_or_mols_lst: List[str],
+    indices: Optional[List[Any]],
+    scores: Optional[List[Number]],
+) -> None:
+
+    should_raise: bool = (
+        (indices is not None) and (len(indices) != len(smiles_or_mols_lst))
+    ) or ((scores is not None) and (len(scores) != len(smiles_or_mols_lst)))
+    if should_raise:
+        with pytest.raises(ValueError):
+            space = ChemicalSpaceBaseLayer(
+                smiles_or_mols_lst, indices=indices, scores=scores
+            )
+        return
+    else:
+        space = ChemicalSpaceBaseLayer(
+            smiles_or_mols_lst, indices=indices, scores=scores
+        )
+
+    assert len(space) == len(smiles_or_mols_lst)
+    if indices is not None:
+        assert len(space) == len(indices)
+    if scores is not None:
+        assert len(space) == len(scores)
 
 
 @pytest.mark.parametrize(
@@ -84,20 +129,48 @@ def test_smi_io(space: ChemicalSpaceBaseLayer, tmp_path: Path, gzipped: bool) ->
     assert space == space_loaded
 
 
+@pytest.mark.parametrize("scores_prop", [None, "scores"])
 @pytest.mark.parametrize("gzipped", [False, True])
-def test_sdf_io(space: ChemicalSpaceBaseLayer, tmp_path: Path, gzipped: bool) -> None:
+@pytest.mark.parametrize("add_scores", [True, False])
+def test_sdf_io(
+    space: ChemicalSpaceBaseLayer,
+    tmp_path: Path,
+    gzipped: bool,
+    add_scores: bool,
+    scores_prop: Optional[str],
+) -> None:
+
     if gzipped:
         fname = "test.sdf.gz"
     else:
         fname = "test.sdf"
 
-    space.to_sdf(str(tmp_path / fname))
+    if add_scores:
+        space.scores = np.array(range(len(space)))
+
+    if (scores_prop is not None) and (space.scores is None):
+        with pytest.raises(ValueError):
+            space.to_sdf(str(tmp_path / fname), scores_prop=scores_prop)
+        return
+    else:
+        space.to_sdf(str(tmp_path / fname), scores_prop=scores_prop)
 
     assert (tmp_path / fname).exists()
 
-    space_loaded = ChemicalSpaceBaseLayer.from_sdf(str(tmp_path / fname))
+    space_loaded = ChemicalSpaceBaseLayer.from_sdf(
+        str(tmp_path / fname), scores_prop=scores_prop
+    )
 
     assert space == space_loaded
+
+    if (space.indices is not None) and (space_loaded.indices is not None):
+        assert (space.indices == space_loaded.indices).all()
+
+    if scores_prop is not None:
+        if (space.scores is not None) and (space_loaded.scores is not None):
+            assert (space.scores == space_loaded.scores).all()
+        else:
+            raise ValueError("Scores None for one of the spaces")
 
 
 @pytest.mark.parametrize("featurizer", [ecfp4_featurizer, maccs_featurizer])
@@ -297,3 +370,26 @@ def test_dual_operations(
     assert len(empty_space) == 0
     assert empty_space._features is not None
     assert empty_space._features.size == 0
+
+
+@pytest.mark.parametrize("scores", [True, False])
+@pytest.mark.parametrize("indices", [True, False])
+def test_draw(
+    space: ChemicalSpaceBaseLayer, tmp_path: Path, indices: bool, scores: bool
+) -> None:
+    img = space.draw(indices=indices, scores=scores)
+    img.save(str(tmp_path / "test.png"))
+
+    assert (tmp_path / "test.png").exists()
+
+
+def test_repr(space: ChemicalSpaceBaseLayer) -> None:
+    assert (
+        repr(space) == "<ChemicalSpaceBaseLayer: 10 molecules | 10 indices | No scores>"
+    )
+
+
+def test_str(space: ChemicalSpaceBaseLayer) -> None:
+    assert (
+        str(space) == "<ChemicalSpaceBaseLayer: 10 molecules | 10 indices | No scores>"
+    )
