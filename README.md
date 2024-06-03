@@ -1,17 +1,17 @@
-![coverage](.badges/coverage.svg)&nbsp;&nbsp;
-![tests](.badges/tests.svg)
+![](.badges/coverage.svg)&nbsp;&nbsp;
+![](.badges/tests.svg)
 
 # ChemicalSpace
 
 An Object-Oriented Representation for Chemical Spaces
 
-`ChemicalSpace` is a Python package that provides an object-oriented
+`chemicalspace` is a Python package that provides an object-oriented
 representation for chemical spaces. It is designed to be used in conjunction
 with the `RDKit` package, which provides the underlying cheminformatics functionality.
 
 ## Installation
 
-To install `ChemicalSpace`, you can use `pip`:
+To install `chemicalspace`, you can use `pip`:
 
 ```bash
 pip install .
@@ -19,7 +19,7 @@ pip install .
 
 # Usage
 
-The main class in `ChemicalSpace` is `ChemicalSpace`.
+The main class in `chemicalspace` is `ChemicalSpace`.
 The class provides a number of methods for working with chemical spaces,
 including reading and writing, filtering, clustering and
 picking from chemical spaces.
