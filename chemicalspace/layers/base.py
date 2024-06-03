@@ -82,7 +82,7 @@ class ChemicalSpaceBaseLayer(ABC):
             ValueError: If the number of scores does not match the number of molecules.
         """
         mols_m = np.array((parallel_map(utils.safe_smiles2mol, mols, n_jobs=n_jobs)))
-        self.mols: NDArray[Mol] = np.array(mols_m)
+        self.mols: NDArray[Mol] = np.array(mols_m)  # type: ignore
 
         self.indices: Union[NDArray[Any], None] = (
             np.array(indices) if indices is not None else None
@@ -126,7 +126,7 @@ class ChemicalSpaceBaseLayer(ABC):
             None
         """
         mol_m = mol if isinstance(mol, Mol) else utils.smiles2mol(mol)
-        self.mols = np.append(self.mols, mol_m)
+        self.mols = np.append(self.mols, np.array([mol_m]))
 
         if self.indices is not None:
             if idx is None:
@@ -217,7 +217,7 @@ class ChemicalSpaceBaseLayer(ABC):
         Calculate the features for each molecule in the chemical space.
 
         Returns:
-            NDArray[np.int_]: An array of features for each molecule.
+            NDArray[int]: An array of features for each molecule.
         """
         if self._features is None:
             self._features = np.array(

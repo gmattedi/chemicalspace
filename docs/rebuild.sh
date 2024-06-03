@@ -1,3 +1,5 @@
-rm -f chemicalspace*.rst modules.rst
-sphinx-apidoc --ext-autodoc --ext-coverage --ext-mathjax -o . -f ../chemicalspace
+#!/bin/bash
+
+rm -f source/chemicalspace*.rst
+sphinx-apidoc -o source -f ../chemicalspace
 make html

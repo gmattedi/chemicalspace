@@ -1,25 +1,27 @@
-![coverage](.badges/coverage.svg)&nbsp;&nbsp;
-![tests](.badges/tests.svg)
+![](.badges/coverage.svg)&nbsp;&nbsp;
+![](.badges/tests.svg)
 
 # ChemicalSpace
 
 An Object-Oriented Representation for Chemical Spaces
 
-`ChemicalSpace` is a Python package that provides an object-oriented
+`chemicalspace` is a Python package that provides an object-oriented
 representation for chemical spaces. It is designed to be used in conjunction
 with the `RDKit` package, which provides the underlying cheminformatics functionality.
 
+While in the awesome `RDKit`, the main frame of reference is that of single molecules, here the main focus is on operations on chemical spaces.
+
 ## Installation
 
-To install `ChemicalSpace`, you can use `pip`:
+To install `chemicalspace` you can use `pip`:
 
 ```bash
-pip install .
+pip install chemicalspace
 ```
 
 # Usage
 
-The main class in `ChemicalSpace` is `ChemicalSpace`.
+The main class in `chemicalspace` is `ChemicalSpace`.
 The class provides a number of methods for working with chemical spaces,
 including reading and writing, filtering, clustering and
 picking from chemical spaces.
@@ -169,6 +171,18 @@ for chunk in chunks:
 <ChemicalSpace: 3 molecules | 3 indices | No scores>
 <ChemicalSpace: 1 molecules | 1 indices | No scores>
 ```
+
+### Drawing
+
+A `ChemicalSpace` object can be rendered as a grid of molecules.
+
+```python
+from chemicalspace import ChemicalSpace
+
+space = ChemicalSpace.from_smi("tests/data/inputs1.smi")
+space.draw()
+```
+![draw](.media/sample.png)
 
 ### Featurizing
 
@@ -582,6 +596,30 @@ print(diversity_vendi_redundant)
 0.1
 ```
 
+# Advanced
+
+## Layers
+
+`ChemicalSpace` is implemented as a series of *layers* that provide the functionality of the class. As can be seen in the [source code](chemicalspace/space.py), the class simply combines the layers.
+
+If only a subset of the functionality of `ChemicalSpace` is necessary, and lean objects are a priority, one can combine only the required layers:
+
+```python
+from chemicalspace.layers.clustering import ChemicalSpaceClusteringLayer
+from chemicalspace.layers.neighbors import ChemicalSpaceNeighborsLayer
+
+
+class MyCustomSpace(ChemicalSpaceClusteringLayer, ChemicalSpaceNeighborsLayer):
+    pass
+
+
+space = MyCustomSpace(mols=["c1ccccc1"])
+space
+```
+```text
+<MyCustomSpace: 1 molecules | No indices | No scores>
+```
+
 # Development
 
 ## Installation
@@ -599,3 +637,12 @@ Install the hooks with:
 
 ```bash
 pre-commit install
+```
+
+## Documentation
+
+The documentation can be built by running:
+```bash
+cd docs
+./rebuild.sh
+```
