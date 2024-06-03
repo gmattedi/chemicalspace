@@ -226,6 +226,44 @@ class ChemicalSpaceBaseLayer(ABC):
 
         return self._features
 
+    def draw(
+        self, indices: bool = True, scores: bool = True, mols_per_row: int = 5, **kwargs
+    ):
+        """
+        Draw the molecules in a grid image.
+
+        Args:
+            indices (bool): Whether to include indices in the legends. Defaults to True.
+            scores (bool): Whether to include scores in the legends. Defaults to True.
+            mols_per_row (int): Number of molecules to display per row. Defaults to 5.
+            **kwargs: Additional keyword arguments to be passed to the
+                `Draw.MolsToGridImage` function.
+
+        Returns:
+            PIL.Image.Image: The grid image containing the drawn molecules.
+        """
+        from rdkit.Chem import Draw
+
+        Draw.rdDepictor.SetPreferCoordGen(True)
+
+        if indices and (self.indices is not None):
+            legends = [str(idx) for idx in self.indices]
+        else:
+            legends = ["" for _ in range(len(self))]
+
+        if scores and (self.scores is not None):
+            legends = [
+                f"{legends[i]}\n{float(self.scores[i]):.2f}" for i in range(len(self))
+            ]
+
+        # strip initial newline if no indices
+        legends = [legend.lstrip("\n") for legend in legends]
+
+        img = Draw.MolsToGridImage(
+            self.mols, molsPerRow=mols_per_row, legends=legends, **kwargs
+        )
+        return img
+
     @classmethod
     def from_smi(cls: Type[T], path: str, **kwargs) -> T:
         """
