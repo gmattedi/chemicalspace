@@ -1,5 +1,6 @@
 ![](.badges/coverage.svg)&nbsp;&nbsp;
-![](.badges/tests.svg)
+![](.badges/tests.svg)&nbsp;&nbsp;
+[![](https://readthedocs.org/projects/chemicalspace/badge/?version=latest)](https://chemicalspace.readthedocs.io/en/latest/?badge=latest)
 
 # ChemicalSpace
 
