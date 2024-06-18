@@ -79,7 +79,7 @@ def vendi_score(
 
     """
 
-    pairwise = pairwise_distances(X, metric=metric, n_jobs=n_jobs)
+    pairwise = 1 - pairwise_distances(X, metric=metric, n_jobs=n_jobs)
     pairwise_scaled = pairwise / X.shape[0]
 
     evals: NDArray[np.float_] = scipy.linalg.eigvalsh(pairwise_scaled)
